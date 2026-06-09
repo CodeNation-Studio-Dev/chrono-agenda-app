@@ -2,7 +2,7 @@
 
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { user, meetingTypes, availabilitySlots, bookings } from '@/lib/db/schema'
+import { user, businesses, meetingTypes, availabilitySlots, bookings } from '@/lib/db/schema'
 import { and, eq, gte, desc, asc } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
@@ -17,10 +17,9 @@ import { generateICS } from '@/lib/calendar'
 import { format } from 'date-fns'
 
 // Build an .ics calendar invite attachment for a booking.
-// A stable UID per booking means reschedules/cancellations update the same
-// event in Google Calendar / Outlook instead of creating duplicates.
 function buildInvite(opts: {
   bookingId: number
+  businessId: number
   title: string
   description: string
   date: string
@@ -34,7 +33,7 @@ function buildInvite(opts: {
   sequence?: number
 }) {
   const ics = generateICS({
-    uid: `booking-${opts.bookingId}@meetingscheduler`,
+    uid: `booking-${opts.bookingId}-biz-${opts.businessId}@meetingscheduler`,
     title: opts.title,
     description: opts.description,
     date: opts.date,
@@ -56,10 +55,9 @@ function buildInvite(opts: {
   ]
 }
 
-// Auth helper
+// Auth helpers
 async function getSession() {
-  const session = await auth.api.getSession({ headers: await headers() })
-  return session
+  return auth.api.getSession({ headers: await headers() })
 }
 
 async function getUserId() {
@@ -78,6 +76,17 @@ async function requireAdmin() {
   return session.user.id
 }
 
+// Verify the admin owns the given business and return it
+async function requireBusinessOwner(adminId: string, businessId: number) {
+  const biz = await db
+    .select()
+    .from(businesses)
+    .where(and(eq(businesses.id, businessId), eq(businesses.ownerId, adminId)))
+    .limit(1)
+  if (biz.length === 0) throw new Error('Business not found')
+  return biz[0]
+}
+
 // Get current user with role
 export async function getCurrentUser() {
   const session = await getSession()
@@ -86,68 +95,135 @@ export async function getCurrentUser() {
   return userRecord[0] || null
 }
 
-// Meeting Types Actions
-export async function getMeetingTypes() {
-  return db.select().from(meetingTypes).where(eq(meetingTypes.isActive, true)).orderBy(asc(meetingTypes.name))
+// ---------------------------------------------------------------------------
+// Meeting Types
+// ---------------------------------------------------------------------------
+
+export async function getMeetingTypes(businessId: number) {
+  return db
+    .select()
+    .from(meetingTypes)
+    .where(and(eq(meetingTypes.businessId, businessId), eq(meetingTypes.isActive, true)))
+    .orderBy(asc(meetingTypes.name))
 }
 
-export async function getAllMeetingTypes() {
-  await requireAdmin()
-  return db.select().from(meetingTypes).orderBy(asc(meetingTypes.name))
+export async function getAllMeetingTypes(businessId: number) {
+  const adminId = await requireAdmin()
+  await requireBusinessOwner(adminId, businessId)
+  return db
+    .select()
+    .from(meetingTypes)
+    .where(eq(meetingTypes.businessId, businessId))
+    .orderBy(asc(meetingTypes.name))
 }
 
-export async function createMeetingType(data: { name: string; description?: string; duration: number; color: string }) {
-  await requireAdmin()
-  const result = await db.insert(meetingTypes).values(data).returning()
+export async function createMeetingType(
+  businessId: number,
+  data: { name: string; description?: string; duration: number; color: string },
+) {
+  const adminId = await requireAdmin()
+  await requireBusinessOwner(adminId, businessId)
+  const result = await db.insert(meetingTypes).values({ ...data, businessId }).returning()
   revalidatePath('/admin')
   return result[0]
 }
 
-export async function updateMeetingType(id: number, data: { name?: string; description?: string; duration?: number; color?: string; isActive?: boolean }) {
-  await requireAdmin()
-  const result = await db.update(meetingTypes).set({ ...data, updatedAt: new Date() }).where(eq(meetingTypes.id, id)).returning()
+export async function updateMeetingType(
+  id: number,
+  businessId: number,
+  data: { name?: string; description?: string; duration?: number; color?: string; isActive?: boolean },
+) {
+  const adminId = await requireAdmin()
+  await requireBusinessOwner(adminId, businessId)
+  const result = await db
+    .update(meetingTypes)
+    .set({ ...data, updatedAt: new Date() })
+    .where(and(eq(meetingTypes.id, id), eq(meetingTypes.businessId, businessId)))
+    .returning()
   revalidatePath('/admin')
   return result[0]
 }
 
-export async function deleteMeetingType(id: number) {
-  await requireAdmin()
-  await db.delete(meetingTypes).where(eq(meetingTypes.id, id))
+export async function deleteMeetingType(id: number, businessId: number) {
+  const adminId = await requireAdmin()
+  await requireBusinessOwner(adminId, businessId)
+  await db
+    .delete(meetingTypes)
+    .where(and(eq(meetingTypes.id, id), eq(meetingTypes.businessId, businessId)))
   revalidatePath('/admin')
 }
 
-// Availability Slots Actions
-export async function getAvailableSlots(dateStr?: string) {
+// ---------------------------------------------------------------------------
+// Availability Slots
+// ---------------------------------------------------------------------------
+
+export async function getAvailableSlots(businessId: number, dateStr?: string) {
   const today = new Date().toISOString().split('T')[0]
-  const query = dateStr 
-    ? and(eq(availabilitySlots.date, dateStr), eq(availabilitySlots.isBooked, false))
-    : and(gte(availabilitySlots.date, today), eq(availabilitySlots.isBooked, false))
-  
-  return db.select().from(availabilitySlots).where(query).orderBy(asc(availabilitySlots.date), asc(availabilitySlots.startTime))
+  const query = dateStr
+    ? and(
+        eq(availabilitySlots.businessId, businessId),
+        eq(availabilitySlots.date, dateStr),
+        eq(availabilitySlots.isBooked, false),
+      )
+    : and(
+        eq(availabilitySlots.businessId, businessId),
+        gte(availabilitySlots.date, today),
+        eq(availabilitySlots.isBooked, false),
+      )
+
+  return db
+    .select()
+    .from(availabilitySlots)
+    .where(query)
+    .orderBy(asc(availabilitySlots.date), asc(availabilitySlots.startTime))
 }
 
-export async function getAdminSlots() {
+export async function getAdminSlots(businessId: number) {
   const adminId = await requireAdmin()
-  return db.select().from(availabilitySlots).where(eq(availabilitySlots.adminId, adminId)).orderBy(asc(availabilitySlots.date), asc(availabilitySlots.startTime))
+  await requireBusinessOwner(adminId, businessId)
+  return db
+    .select()
+    .from(availabilitySlots)
+    .where(and(eq(availabilitySlots.businessId, businessId), eq(availabilitySlots.adminId, adminId)))
+    .orderBy(asc(availabilitySlots.date), asc(availabilitySlots.startTime))
 }
 
-export async function createAvailabilitySlot(data: { date: string; startTime: string; endTime: string }) {
+export async function createAvailabilitySlot(
+  businessId: number,
+  data: { date: string; startTime: string; endTime: string },
+) {
   const adminId = await requireAdmin()
-  const result = await db.insert(availabilitySlots).values({ ...data, adminId }).returning()
+  await requireBusinessOwner(adminId, businessId)
+  const result = await db
+    .insert(availabilitySlots)
+    .values({ ...data, businessId, adminId })
+    .returning()
   revalidatePath('/admin')
   return result[0]
 }
 
-export async function deleteAvailabilitySlot(id: number) {
+export async function deleteAvailabilitySlot(id: number, businessId: number) {
   const adminId = await requireAdmin()
-  await db.delete(availabilitySlots).where(and(eq(availabilitySlots.id, id), eq(availabilitySlots.adminId, adminId)))
+  await requireBusinessOwner(adminId, businessId)
+  await db
+    .delete(availabilitySlots)
+    .where(
+      and(
+        eq(availabilitySlots.id, id),
+        eq(availabilitySlots.adminId, adminId),
+        eq(availabilitySlots.businessId, businessId),
+      ),
+    )
   revalidatePath('/admin')
 }
 
-// Bookings Actions
-export async function getClientBookings() {
+// ---------------------------------------------------------------------------
+// Bookings
+// ---------------------------------------------------------------------------
+
+export async function getClientBookings(businessId: number) {
   const clientId = await getUserId()
-  const results = await db
+  return db
     .select({
       booking: bookings,
       slot: availabilitySlots,
@@ -156,15 +232,14 @@ export async function getClientBookings() {
     .from(bookings)
     .innerJoin(availabilitySlots, eq(bookings.slotId, availabilitySlots.id))
     .innerJoin(meetingTypes, eq(bookings.meetingTypeId, meetingTypes.id))
-    .where(eq(bookings.clientId, clientId))
+    .where(and(eq(bookings.clientId, clientId), eq(bookings.businessId, businessId)))
     .orderBy(desc(bookings.createdAt))
-  
-  return results
 }
 
-export async function getAdminBookings() {
+export async function getAdminBookings(businessId: number) {
   const adminId = await requireAdmin()
-  const results = await db
+  await requireBusinessOwner(adminId, businessId)
+  return db
     .select({
       booking: bookings,
       slot: availabilitySlots,
@@ -175,44 +250,68 @@ export async function getAdminBookings() {
     .innerJoin(availabilitySlots, eq(bookings.slotId, availabilitySlots.id))
     .innerJoin(meetingTypes, eq(bookings.meetingTypeId, meetingTypes.id))
     .innerJoin(user, eq(bookings.clientId, user.id))
-    .where(eq(availabilitySlots.adminId, adminId))
+    .where(eq(bookings.businessId, businessId))
     .orderBy(desc(bookings.createdAt))
-  
-  return results
 }
 
-export async function createBooking(data: { slotId: number; meetingTypeId: number; notes?: string }) {
+export async function createBooking(data: {
+  businessId: number
+  slotId: number
+  meetingTypeId: number
+  notes?: string
+}) {
   const clientId = await getUserId()
-  
-  // Check if slot is available
-  const slot = await db.select().from(availabilitySlots).where(eq(availabilitySlots.id, data.slotId)).limit(1)
-  if (slot.length === 0 || slot[0].isBooked) {
-    throw new Error('This time slot is no longer available')
-  }
-  
-  // Get client info for email
+
+  // Verify slot belongs to the business and is available
+  const slot = await db
+    .select()
+    .from(availabilitySlots)
+    .where(
+      and(
+        eq(availabilitySlots.id, data.slotId),
+        eq(availabilitySlots.businessId, data.businessId),
+        eq(availabilitySlots.isBooked, false),
+      ),
+    )
+    .limit(1)
+  if (slot.length === 0) throw new Error('This time slot is no longer available')
+
   const clientRecord = await db.select().from(user).where(eq(user.id, clientId)).limit(1)
-  const meetingType = await db.select().from(meetingTypes).where(eq(meetingTypes.id, data.meetingTypeId)).limit(1)
-  
-  // Create booking
-  const result = await db.insert(bookings).values({ ...data, clientId }).returning()
-  
-  // Mark slot as booked
-  await db.update(availabilitySlots).set({ isBooked: true, updatedAt: new Date() }).where(eq(availabilitySlots.id, data.slotId))
-  
-  // Send confirmation email to client
+  const meetingType = await db
+    .select()
+    .from(meetingTypes)
+    .where(and(eq(meetingTypes.id, data.meetingTypeId), eq(meetingTypes.businessId, data.businessId)))
+    .limit(1)
+
+  const biz = await db.select().from(businesses).where(eq(businesses.id, data.businessId)).limit(1)
+
+  const result = await db
+    .insert(bookings)
+    .values({ businessId: data.businessId, slotId: data.slotId, clientId, meetingTypeId: data.meetingTypeId, notes: data.notes })
+    .returning()
+
+  await db
+    .update(availabilitySlots)
+    .set({ isBooked: true, updatedAt: new Date() })
+    .where(eq(availabilitySlots.id, data.slotId))
+
   if (clientRecord[0]?.email && meetingType[0]) {
     const dateFormatted = format(new Date(slot[0].date), 'EEEE, MMMM d, yyyy')
     const timeFormatted = `${slot[0].startTime} - ${slot[0].endTime}`
-    const emailContent = getBookingConfirmationEmail(clientRecord[0].name, meetingType[0].name, dateFormatted, timeFormatted)
+    const businessName = biz[0]?.name ?? 'MeetingScheduler'
+    const emailContent = getBookingConfirmationEmail(
+      clientRecord[0].name,
+      meetingType[0].name,
+      dateFormatted,
+      timeFormatted,
+      businessName,
+    )
 
-    // Notify admin (also used as the calendar organizer)
     const admin = await db.select().from(user).where(eq(user.id, slot[0].adminId)).limit(1)
-
-    // Attach an .ics invite so the client can add it to Google Calendar / Outlook
     const invite = admin[0]?.email
       ? buildInvite({
           bookingId: result[0].id,
+          businessId: data.businessId,
           title: meetingType[0].name,
           description: data.notes || `${meetingType[0].name} meeting`,
           date: slot[0].date,
@@ -230,59 +329,65 @@ export async function createBooking(data: { slotId: number; meetingTypeId: numbe
     await sendEmail({ to: clientRecord[0].email, ...emailContent, attachments: invite })
 
     if (admin[0]?.email) {
-      const adminEmailContent = getAdminNotificationEmail(admin[0].name, clientRecord[0].name, clientRecord[0].email, meetingType[0].name, dateFormatted, timeFormatted, 'booked')
+      const adminEmailContent = getAdminNotificationEmail(
+        admin[0].name,
+        clientRecord[0].name,
+        clientRecord[0].email,
+        meetingType[0].name,
+        dateFormatted,
+        timeFormatted,
+        'booked',
+        businessName,
+      )
       await sendEmail({ to: admin[0].email, ...adminEmailContent, attachments: invite })
     }
   }
-  
-  revalidatePath('/bookings')
-  revalidatePath('/book')
+
   revalidatePath('/admin')
   return result[0]
 }
 
 export async function cancelBooking(id: number) {
   const clientId = await getUserId()
-  
-  // Get booking info
+
   const bookingRecord = await db
-    .select({
-      booking: bookings,
-      slot: availabilitySlots,
-      meetingType: meetingTypes,
-    })
+    .select({ booking: bookings, slot: availabilitySlots, meetingType: meetingTypes })
     .from(bookings)
     .innerJoin(availabilitySlots, eq(bookings.slotId, availabilitySlots.id))
     .innerJoin(meetingTypes, eq(bookings.meetingTypeId, meetingTypes.id))
     .where(and(eq(bookings.id, id), eq(bookings.clientId, clientId)))
     .limit(1)
-  
-  if (bookingRecord.length === 0) {
-    throw new Error('Booking not found')
-  }
-  
+
+  if (bookingRecord.length === 0) throw new Error('Booking not found')
+
   const { booking, slot, meetingType } = bookingRecord[0]
-  
-  // Update booking status
+
   await db.update(bookings).set({ status: 'cancelled', updatedAt: new Date() }).where(eq(bookings.id, id))
-  
-  // Free up the slot
-  await db.update(availabilitySlots).set({ isBooked: false, updatedAt: new Date() }).where(eq(availabilitySlots.id, booking.slotId))
-  
-  // Send cancellation email
+  await db
+    .update(availabilitySlots)
+    .set({ isBooked: false, updatedAt: new Date() })
+    .where(eq(availabilitySlots.id, booking.slotId))
+
   const clientRecord = await db.select().from(user).where(eq(user.id, clientId)).limit(1)
+  const biz = await db.select().from(businesses).where(eq(businesses.id, booking.businessId)).limit(1)
+
   if (clientRecord[0]?.email) {
     const dateFormatted = format(new Date(slot.date), 'EEEE, MMMM d, yyyy')
     const timeFormatted = `${slot.startTime} - ${slot.endTime}`
-    const emailContent = getBookingCancellationEmail(clientRecord[0].name, meetingType.name, dateFormatted, timeFormatted)
+    const businessName = biz[0]?.name ?? 'MeetingScheduler'
+    const emailContent = getBookingCancellationEmail(
+      clientRecord[0].name,
+      meetingType.name,
+      dateFormatted,
+      timeFormatted,
+      businessName,
+    )
 
-    // Notify admin (calendar organizer)
     const admin = await db.select().from(user).where(eq(user.id, slot.adminId)).limit(1)
-
-    // Send a CANCELLED invite (sequence 2) so calendars remove the event
     const invite = admin[0]?.email
       ? buildInvite({
           bookingId: id,
+          businessId: booking.businessId,
           title: meetingType.name,
           description: `${meetingType.name} meeting`,
           date: slot.date,
@@ -300,68 +405,89 @@ export async function cancelBooking(id: number) {
     await sendEmail({ to: clientRecord[0].email, ...emailContent, attachments: invite })
 
     if (admin[0]?.email) {
-      const adminEmailContent = getAdminNotificationEmail(admin[0].name, clientRecord[0].name, clientRecord[0].email, meetingType.name, dateFormatted, timeFormatted, 'cancelled')
+      const adminEmailContent = getAdminNotificationEmail(
+        admin[0].name,
+        clientRecord[0].name,
+        clientRecord[0].email,
+        meetingType.name,
+        dateFormatted,
+        timeFormatted,
+        'cancelled',
+        businessName,
+      )
       await sendEmail({ to: admin[0].email, ...adminEmailContent, attachments: invite })
     }
   }
-  
-  revalidatePath('/bookings')
-  revalidatePath('/book')
+
   revalidatePath('/admin')
 }
 
 export async function rescheduleBooking(id: number, newSlotId: number) {
   const clientId = await getUserId()
-  
-  // Get current booking
+
   const bookingRecord = await db
-    .select({
-      booking: bookings,
-      slot: availabilitySlots,
-      meetingType: meetingTypes,
-    })
+    .select({ booking: bookings, slot: availabilitySlots, meetingType: meetingTypes })
     .from(bookings)
     .innerJoin(availabilitySlots, eq(bookings.slotId, availabilitySlots.id))
     .innerJoin(meetingTypes, eq(bookings.meetingTypeId, meetingTypes.id))
     .where(and(eq(bookings.id, id), eq(bookings.clientId, clientId)))
     .limit(1)
-  
-  if (bookingRecord.length === 0) {
-    throw new Error('Booking not found')
-  }
-  
-  // Check new slot availability
-  const newSlot = await db.select().from(availabilitySlots).where(eq(availabilitySlots.id, newSlotId)).limit(1)
-  if (newSlot.length === 0 || newSlot[0].isBooked) {
-    throw new Error('The new time slot is no longer available')
-  }
-  
+
+  if (bookingRecord.length === 0) throw new Error('Booking not found')
+
   const { booking, slot: oldSlot, meetingType } = bookingRecord[0]
-  
-  // Update booking
-  await db.update(bookings).set({ slotId: newSlotId, status: 'rescheduled', updatedAt: new Date() }).where(eq(bookings.id, id))
-  
-  // Free old slot, book new slot
-  await db.update(availabilitySlots).set({ isBooked: false, updatedAt: new Date() }).where(eq(availabilitySlots.id, oldSlot.id))
-  await db.update(availabilitySlots).set({ isBooked: true, updatedAt: new Date() }).where(eq(availabilitySlots.id, newSlotId))
-  
-  // Send reschedule email
+
+  const newSlot = await db
+    .select()
+    .from(availabilitySlots)
+    .where(
+      and(
+        eq(availabilitySlots.id, newSlotId),
+        eq(availabilitySlots.businessId, booking.businessId),
+        eq(availabilitySlots.isBooked, false),
+      ),
+    )
+    .limit(1)
+  if (newSlot.length === 0) throw new Error('The new time slot is no longer available')
+
+  await db
+    .update(bookings)
+    .set({ slotId: newSlotId, status: 'rescheduled', updatedAt: new Date() })
+    .where(eq(bookings.id, id))
+  await db
+    .update(availabilitySlots)
+    .set({ isBooked: false, updatedAt: new Date() })
+    .where(eq(availabilitySlots.id, oldSlot.id))
+  await db
+    .update(availabilitySlots)
+    .set({ isBooked: true, updatedAt: new Date() })
+    .where(eq(availabilitySlots.id, newSlotId))
+
   const clientRecord = await db.select().from(user).where(eq(user.id, clientId)).limit(1)
+  const biz = await db.select().from(businesses).where(eq(businesses.id, booking.businessId)).limit(1)
+
   if (clientRecord[0]?.email) {
     const oldDateFormatted = format(new Date(oldSlot.date), 'EEEE, MMMM d, yyyy')
     const oldTimeFormatted = `${oldSlot.startTime} - ${oldSlot.endTime}`
     const newDateFormatted = format(new Date(newSlot[0].date), 'EEEE, MMMM d, yyyy')
     const newTimeFormatted = `${newSlot[0].startTime} - ${newSlot[0].endTime}`
-    
-    const emailContent = getRescheduleEmail(clientRecord[0].name, meetingType.name, oldDateFormatted, oldTimeFormatted, newDateFormatted, newTimeFormatted)
+    const businessName = biz[0]?.name ?? 'MeetingScheduler'
 
-    // Notify admin (calendar organizer)
+    const emailContent = getRescheduleEmail(
+      clientRecord[0].name,
+      meetingType.name,
+      oldDateFormatted,
+      oldTimeFormatted,
+      newDateFormatted,
+      newTimeFormatted,
+      businessName,
+    )
+
     const admin = await db.select().from(user).where(eq(user.id, newSlot[0].adminId)).limit(1)
-
-    // Updated invite (sequence 1) with the new time replaces the original event
     const invite = admin[0]?.email
       ? buildInvite({
           bookingId: id,
+          businessId: booking.businessId,
           title: meetingType.name,
           description: `${meetingType.name} meeting (rescheduled)`,
           date: newSlot[0].date,
@@ -379,55 +505,51 @@ export async function rescheduleBooking(id: number, newSlotId: number) {
     await sendEmail({ to: clientRecord[0].email, ...emailContent, attachments: invite })
 
     if (admin[0]?.email) {
-      const adminEmailContent = getAdminNotificationEmail(admin[0].name, clientRecord[0].name, clientRecord[0].email, meetingType.name, newDateFormatted, newTimeFormatted, 'rescheduled')
+      const adminEmailContent = getAdminNotificationEmail(
+        admin[0].name,
+        clientRecord[0].name,
+        clientRecord[0].email,
+        meetingType.name,
+        newDateFormatted,
+        newTimeFormatted,
+        'rescheduled',
+        businessName,
+      )
       await sendEmail({ to: admin[0].email, ...adminEmailContent, attachments: invite })
     }
   }
-  
-  revalidatePath('/bookings')
-  revalidatePath('/book')
+
   revalidatePath('/admin')
 }
 
-// Admin: Mark a meeting as completed (closed once finished)
-export async function completeBooking(id: number) {
+export async function completeBooking(id: number, businessId: number) {
   const adminId = await requireAdmin()
+  await requireBusinessOwner(adminId, businessId)
 
-  // Ensure the booking belongs to a slot owned by this admin
   const bookingRecord = await db
-    .select({ booking: bookings, slot: availabilitySlots })
+    .select({ booking: bookings })
     .from(bookings)
-    .innerJoin(availabilitySlots, eq(bookings.slotId, availabilitySlots.id))
-    .where(and(eq(bookings.id, id), eq(availabilitySlots.adminId, adminId)))
+    .where(and(eq(bookings.id, id), eq(bookings.businessId, businessId)))
     .limit(1)
 
-  if (bookingRecord.length === 0) {
-    throw new Error('Booking not found')
-  }
+  if (bookingRecord.length === 0) throw new Error('Booking not found')
 
-  await db.update(bookings).set({ status: 'completed', updatedAt: new Date() }).where(eq(bookings.id, id))
-  revalidatePath('/admin')
-  revalidatePath('/bookings')
-}
-
-// Admin: Make user an admin
-export async function makeAdmin(email: string) {
-  const adminId = await requireAdmin()
-  const userRecord = await db.select().from(user).where(eq(user.email, email)).limit(1)
-  if (userRecord.length === 0) {
-    throw new Error('User not found')
-  }
-  await db.update(user).set({ role: 'admin', updatedAt: new Date() }).where(eq(user.id, userRecord[0].id))
+  await db
+    .update(bookings)
+    .set({ status: 'completed', updatedAt: new Date() })
+    .where(eq(bookings.id, id))
   revalidatePath('/admin')
 }
 
-// Admin: List all users
+// ---------------------------------------------------------------------------
+// User management (global admin actions)
+// ---------------------------------------------------------------------------
+
 export async function getAllUsers() {
   await requireAdmin()
   return db.select().from(user).orderBy(asc(user.name))
 }
 
-// Admin: Register a new client (walk-in). Email is optional; phone is captured.
 export async function createClientUser(data: { name: string; phone?: string; email?: string }) {
   await requireAdmin()
 
@@ -437,9 +559,7 @@ export async function createClientUser(data: { name: string; phone?: string; ema
   const email = data.email?.trim() || null
   if (email) {
     const existing = await db.select().from(user).where(eq(user.email, email)).limit(1)
-    if (existing.length > 0) {
-      throw new Error('A user with this email already exists')
-    }
+    if (existing.length > 0) throw new Error('A user with this email already exists')
   }
 
   const result = await db
@@ -459,8 +579,10 @@ export async function createClientUser(data: { name: string; phone?: string; ema
   return result[0]
 }
 
-// Admin: Update a client's contact info
-export async function updateClientUser(userId: string, data: { name?: string; phone?: string; email?: string }) {
+export async function updateClientUser(
+  userId: string,
+  data: { name?: string; phone?: string; email?: string },
+) {
   await requireAdmin()
   const updates: Record<string, unknown> = { updatedAt: new Date() }
   if (data.name !== undefined) updates.name = data.name.trim()
@@ -470,45 +592,73 @@ export async function updateClientUser(userId: string, data: { name?: string; ph
   revalidatePath('/admin')
 }
 
-// Admin: Schedule a meeting on behalf of a client
-export async function adminCreateBooking(data: { slotId: number; clientId: string; meetingTypeId: number; notes?: string }) {
+export async function adminCreateBooking(data: {
+  businessId: number
+  slotId: number
+  clientId: string
+  meetingTypeId: number
+  notes?: string
+}) {
   const adminId = await requireAdmin()
+  await requireBusinessOwner(adminId, data.businessId)
 
-  // Verify the slot belongs to this admin and is free
   const slot = await db
     .select()
     .from(availabilitySlots)
-    .where(and(eq(availabilitySlots.id, data.slotId), eq(availabilitySlots.adminId, adminId)))
+    .where(
+      and(
+        eq(availabilitySlots.id, data.slotId),
+        eq(availabilitySlots.adminId, adminId),
+        eq(availabilitySlots.businessId, data.businessId),
+      ),
+    )
     .limit(1)
-  if (slot.length === 0 || slot[0].isBooked) {
-    throw new Error('This time slot is no longer available')
-  }
+  if (slot.length === 0 || slot[0].isBooked) throw new Error('This time slot is no longer available')
 
-  // Verify the client exists
   const clientRecord = await db.select().from(user).where(eq(user.id, data.clientId)).limit(1)
-  if (clientRecord.length === 0) {
-    throw new Error('Client not found')
-  }
+  if (clientRecord.length === 0) throw new Error('Client not found')
 
-  const meetingType = await db.select().from(meetingTypes).where(eq(meetingTypes.id, data.meetingTypeId)).limit(1)
+  const meetingType = await db
+    .select()
+    .from(meetingTypes)
+    .where(and(eq(meetingTypes.id, data.meetingTypeId), eq(meetingTypes.businessId, data.businessId)))
+    .limit(1)
+
+  const biz = await db.select().from(businesses).where(eq(businesses.id, data.businessId)).limit(1)
 
   const result = await db
     .insert(bookings)
-    .values({ slotId: data.slotId, clientId: data.clientId, meetingTypeId: data.meetingTypeId, notes: data.notes })
+    .values({
+      businessId: data.businessId,
+      slotId: data.slotId,
+      clientId: data.clientId,
+      meetingTypeId: data.meetingTypeId,
+      notes: data.notes,
+    })
     .returning()
 
-  await db.update(availabilitySlots).set({ isBooked: true, updatedAt: new Date() }).where(eq(availabilitySlots.id, data.slotId))
+  await db
+    .update(availabilitySlots)
+    .set({ isBooked: true, updatedAt: new Date() })
+    .where(eq(availabilitySlots.id, data.slotId))
 
-  // Send confirmation + invite only when the client has an email
   if (clientRecord[0].email && meetingType[0]) {
     const dateFormatted = format(new Date(slot[0].date), 'EEEE, MMMM d, yyyy')
     const timeFormatted = `${slot[0].startTime} - ${slot[0].endTime}`
-    const emailContent = getBookingConfirmationEmail(clientRecord[0].name, meetingType[0].name, dateFormatted, timeFormatted)
+    const businessName = biz[0]?.name ?? 'MeetingScheduler'
+    const emailContent = getBookingConfirmationEmail(
+      clientRecord[0].name,
+      meetingType[0].name,
+      dateFormatted,
+      timeFormatted,
+      businessName,
+    )
 
     const admin = await db.select().from(user).where(eq(user.id, adminId)).limit(1)
     const invite = admin[0]?.email
       ? buildInvite({
           bookingId: result[0].id,
+          businessId: data.businessId,
           title: meetingType[0].name,
           description: data.notes || `${meetingType[0].name} meeting`,
           date: slot[0].date,
@@ -530,30 +680,32 @@ export async function adminCreateBooking(data: { slotId: number; clientId: strin
   return result[0]
 }
 
-// Admin: Change a user's role (promote to admin / demote to client)
 export async function setUserRole(userId: string, role: 'admin' | 'client') {
   const adminId = await requireAdmin()
   if (userId === adminId && role !== 'admin') {
     throw new Error('You cannot change your own admin role')
   }
   const target = await db.select().from(user).where(eq(user.id, userId)).limit(1)
-  if (target.length === 0) {
-    throw new Error('User not found')
-  }
+  if (target.length === 0) throw new Error('User not found')
   await db.update(user).set({ role, updatedAt: new Date() }).where(eq(user.id, userId))
   revalidatePath('/admin')
 }
 
-// Admin: Delete a user (cascades to their bookings and slots)
 export async function deleteUser(userId: string) {
   const adminId = await requireAdmin()
-  if (userId === adminId) {
-    throw new Error('You cannot delete your own account')
-  }
+  if (userId === adminId) throw new Error('You cannot delete your own account')
   const target = await db.select().from(user).where(eq(user.id, userId)).limit(1)
-  if (target.length === 0) {
-    throw new Error('User not found')
-  }
+  if (target.length === 0) throw new Error('User not found')
   await db.delete(user).where(eq(user.id, userId))
   revalidatePath('/admin')
 }
+
+// makeAdmin kept for backwards compatibility
+export async function makeAdmin(email: string) {
+  await requireAdmin()
+  const userRecord = await db.select().from(user).where(eq(user.email, email)).limit(1)
+  if (userRecord.length === 0) throw new Error('User not found')
+  await db.update(user).set({ role: 'admin', updatedAt: new Date() }).where(eq(user.id, userRecord[0].id))
+  revalidatePath('/admin')
+}
+

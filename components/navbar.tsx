@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -11,15 +11,18 @@ import type { User as UserType } from '@/lib/db/schema'
 
 interface NavbarProps {
   user: UserType | null
+  businessSlug?: string
 }
 
-export function Navbar({ user }: NavbarProps) {
+
+export function Navbar({ user, businessSlug }: NavbarProps) {
   const router = useRouter()
   const { t } = useLanguage()
 
   const handleSignOut = async () => {
     await authClient.signOut()
-    router.push('/sign-in')
+    const destination = businessSlug ? `/${businessSlug}/sign-in` : '/sign-in'
+    router.push(destination)
     router.refresh()
   }
 
@@ -47,13 +50,13 @@ export function Navbar({ user }: NavbarProps) {
               ) : (
                 <>
                   <Button variant="ghost" size="sm" asChild>
-                    <Link href="/book" className="flex items-center gap-2">
+                    <Link href={businessSlug ? `/${businessSlug}/book` : '/book'} className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       <span className="hidden sm:inline">{t.nav.book}</span>
                     </Link>
                   </Button>
                   <Button variant="ghost" size="sm" asChild>
-                    <Link href="/bookings" className="flex items-center gap-2">
+                    <Link href={businessSlug ? `/${businessSlug}/bookings` : '/bookings'} className="flex items-center gap-2">
                       <User className="h-4 w-4" />
                       <span className="hidden sm:inline">{t.nav.myBookings}</span>
                     </Link>

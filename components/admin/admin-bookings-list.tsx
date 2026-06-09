@@ -31,9 +31,10 @@ interface BookingWithDetails {
 
 interface AdminBookingsListProps {
   bookings: BookingWithDetails[]
+  businessId: number
 }
 
-export function AdminBookingsList({ bookings }: AdminBookingsListProps) {
+export function AdminBookingsList({ bookings, businessId }: AdminBookingsListProps) {
   const { t, language } = useLanguage()
   const dateLocale = language === 'es' ? es : enUS
   const [completingId, setCompletingId] = useState<number | null>(null)
@@ -58,7 +59,7 @@ export function AdminBookingsList({ bookings }: AdminBookingsListProps) {
   async function handleComplete(id: number) {
     setCompletingId(id)
     try {
-      await completeBooking(id)
+      await completeBooking(id, businessId)
     } finally {
       setCompletingId(null)
     }

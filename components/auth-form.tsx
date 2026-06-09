@@ -12,7 +12,15 @@ import { Card } from '@/components/ui/card'
 import { LanguageSelector } from '@/components/language-selector'
 import { CalendarDays } from 'lucide-react'
 
-export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
+export function AuthForm({
+  mode,
+  businessSlug,
+  businessName,
+}: {
+  mode: 'sign-in' | 'sign-up'
+  businessSlug?: string
+  businessName?: string
+}) {
   const router = useRouter()
   const { t } = useLanguage()
   const [name, setName] = useState('')
@@ -40,9 +48,14 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
       return
     }
 
-    router.push('/')
+    // After auth, redirect to the business booking page (or home for admin)
+    const destination = businessSlug ? `/${businessSlug}/book` : '/'
+    router.push(destination)
     router.refresh()
   }
+
+  const signInHref = businessSlug ? `/${businessSlug}/sign-in` : '/sign-in'
+  const signUpHref = businessSlug ? `/${businessSlug}/sign-up` : '/sign-up'
 
   return (
     <main className="min-h-svh bg-background flex items-center justify-center px-4">
@@ -60,7 +73,13 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
             {isSignUp ? t.auth.createAccount : t.auth.welcomeBack}
           </h1>
           <p className="text-sm text-muted-foreground mt-2">
-            {isSignUp ? t.auth.signUpSubtitle : t.auth.signInSubtitle}
+            {businessName
+              ? isSignUp
+                ? `Sign up to book with ${businessName}`
+                : `Sign in to book with ${businessName}`
+              : isSignUp
+                ? t.auth.signUpSubtitle
+                : t.auth.signInSubtitle}
           </p>
         </div>
 
@@ -135,7 +154,7 @@ export function AuthForm({ mode }: { mode: 'sign-in' | 'sign-up' }) {
         <p className="text-sm text-muted-foreground text-center mt-6">
           {isSignUp ? t.auth.alreadyHaveAccount : t.auth.dontHaveAccount}
           <Link
-            href={isSignUp ? '/sign-in' : '/sign-up'}
+            href={isSignUp ? signInHref : signUpHref}
             className="text-primary font-medium underline-offset-4 hover:underline"
           >
             {isSignUp ? t.auth.signInBtn : t.auth.signUp}

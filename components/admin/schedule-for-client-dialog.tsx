@@ -30,10 +30,11 @@ interface ScheduleForClientDialogProps {
   client: User | null
   slots: AvailabilitySlot[]
   meetingTypes: MeetingType[]
+  businessId: number
   onClose: () => void
 }
 
-export function ScheduleForClientDialog({ client, slots, meetingTypes, onClose }: ScheduleForClientDialogProps) {
+export function ScheduleForClientDialog({ client, slots, meetingTypes, businessId, onClose }: ScheduleForClientDialogProps) {
   const { t, language } = useLanguage()
   const router = useRouter()
   const dateLocale = language === 'es' ? es : enUS
@@ -56,6 +57,7 @@ export function ScheduleForClientDialog({ client, slots, meetingTypes, onClose }
     setLoading(true)
     try {
       await adminCreateBooking({
+        businessId,
         slotId: Number(slotId),
         clientId: client.id,
         meetingTypeId: Number(meetingTypeId),

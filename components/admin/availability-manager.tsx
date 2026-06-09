@@ -23,9 +23,10 @@ import type { AvailabilitySlot } from '@/lib/db/schema'
 
 interface AvailabilityManagerProps {
   slots: AvailabilitySlot[]
+  businessId: number
 }
 
-export function AvailabilityManager({ slots }: AvailabilityManagerProps) {
+export function AvailabilityManager({ slots, businessId }: AvailabilityManagerProps) {
   const router = useRouter()
   const { t, language } = useLanguage()
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
@@ -54,10 +55,10 @@ export function AvailabilityManager({ slots }: AvailabilityManagerProps) {
     if (!selectedDate) return
     setLoading(true)
     try {
-      await createAvailabilitySlot({
+      await createAvailabilitySlot(businessId, {
         date: format(selectedDate, 'yyyy-MM-dd'),
         startTime,
-        endTime
+        endTime,
       })
       setDialogOpen(false)
       router.refresh()
@@ -71,7 +72,7 @@ export function AvailabilityManager({ slots }: AvailabilityManagerProps) {
   const handleDeleteSlot = async (id: number) => {
     if (!confirm(language === 'es' ? 'Estas seguro de que quieres eliminar este horario?' : 'Are you sure you want to delete this slot?')) return
     try {
-      await deleteAvailabilitySlot(id)
+      await deleteAvailabilitySlot(id, businessId)
       router.refresh()
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to delete slot')

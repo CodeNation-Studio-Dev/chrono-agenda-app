@@ -37,9 +37,10 @@ interface UsersManagerProps {
   currentUserId: string
   slots: AvailabilitySlot[]
   meetingTypes: MeetingType[]
+  businessId: number
 }
 
-export function UsersManager({ users, currentUserId, slots, meetingTypes }: UsersManagerProps) {
+export function UsersManager({ users, currentUserId, slots, meetingTypes, businessId }: UsersManagerProps) {
   const { t } = useLanguage()
   const router = useRouter()
   const [pendingId, setPendingId] = useState<string | null>(null)
@@ -281,6 +282,7 @@ export function UsersManager({ users, currentUserId, slots, meetingTypes }: User
         client={scheduleClient}
         slots={slots}
         meetingTypes={meetingTypes}
+        businessId={businessId}
         onClose={() => setScheduleClient(null)}
       />
 

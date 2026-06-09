@@ -5,45 +5,27 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import Link from 'next/link'
 import { CalendarDays, Clock, Users, RefreshCw } from 'lucide-react'
-import type { BusinessSettings } from '@/lib/db/schema'
 
-export function HomeContent({ businessSettings }: { businessSettings: BusinessSettings | null }) {
+export function HomeContent() {
   const { t } = useLanguage()
-
-  const hasBranding = Boolean(businessSettings?.name || businessSettings?.description || businessSettings?.logoUrl)
 
   return (
     <main className="max-w-6xl mx-auto px-4 py-16">
       {/* Hero Section */}
       <section className="text-center mb-20">
-        {businessSettings?.logoUrl ? (
-          <div className="mb-8 flex justify-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={businessSettings.logoUrl || "/placeholder.svg"}
-              alt={businessSettings.name || 'Business logo'}
-              className="h-24 w-auto max-w-[240px] object-contain"
-            />
-          </div>
-        ) : (
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
-            <CalendarDays className="h-4 w-4" />
-            {t.home.badge}
-          </div>
-        )}
+        <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
+          <CalendarDays className="h-4 w-4" />
+          {t.home.badge}
+        </div>
 
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground mb-6 text-balance">
-          {hasBranding && businessSettings?.name ? (
-            businessSettings.name
-          ) : (
-            <>
-              {t.home.title} <br className="hidden sm:block" />
-              {t.home.titleBreak}
-            </>
-          )}
+          <>
+            {t.home.title} <br className="hidden sm:block" />
+            {t.home.titleBreak}
+          </>
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8 text-pretty">
-          {hasBranding && businessSettings?.description ? businessSettings.description : t.home.subtitle}
+          {t.home.subtitle}
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button size="lg" asChild>

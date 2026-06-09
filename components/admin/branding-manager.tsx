@@ -2,8 +2,8 @@
 
 import { useState, useRef } from 'react'
 import { useLanguage } from '@/lib/i18n/language-context'
-import { updateBusinessSettings } from '@/app/actions/business'
-import type { BusinessSettings } from '@/lib/db/schema'
+import { updateBusiness } from '@/app/actions/business'
+import type { Business } from '@/lib/db/schema'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,13 +13,13 @@ import { Upload, Trash2, Building2, Check } from 'lucide-react'
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024 // 2MB
 
-export function BrandingManager({ settings }: { settings: BusinessSettings | null }) {
+export function BrandingManager({ business }: { business: Business | null }) {
   const { t } = useLanguage()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [name, setName] = useState(settings?.name ?? '')
-  const [description, setDescription] = useState(settings?.description ?? '')
-  const [logoUrl, setLogoUrl] = useState<string | null>(settings?.logoUrl ?? null)
+  const [name, setName] = useState(business?.name ?? '')
+  const [description, setDescription] = useState(business?.description ?? '')
+  const [logoUrl, setLogoUrl] = useState<string | null>(business?.logoUrl ?? null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
@@ -40,11 +40,12 @@ export function BrandingManager({ settings }: { settings: BusinessSettings | nul
   }
 
   async function handleSave() {
+    if (!business) return
     setSaving(true)
     setSaved(false)
     setError('')
     try {
-      await updateBusinessSettings({ name, description, logoUrl })
+      await updateBusiness(business.id, { name, description, logoUrl })
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {

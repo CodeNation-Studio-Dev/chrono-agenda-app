@@ -44,17 +44,20 @@ export function getBookingConfirmationEmail(
   clientName: string,
   meetingType: string,
   date: string,
-  time: string
+  time: string,
+  businessName?: string,
 ) {
+  const fromLabel = businessName ?? 'MeetingScheduler'
   return {
-    subject: `Booking Confirmed: ${meetingType}`,
+    subject: `Booking Confirmed: ${meetingType} — ${fromLabel}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #1a1a1a;">Booking Confirmed</h2>
         <p>Hi ${clientName},</p>
-        <p>Your meeting has been successfully scheduled.</p>
+        <p>Your meeting with <strong>${fromLabel}</strong> has been successfully scheduled.</p>
         <div style="background: #f4f4f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <p style="margin: 0;"><strong>Meeting Type:</strong> ${meetingType}</p>
+          <p style="margin: 0;"><strong>Business:</strong> ${fromLabel}</p>
+          <p style="margin: 8px 0 0;"><strong>Meeting Type:</strong> ${meetingType}</p>
           <p style="margin: 8px 0 0;"><strong>Date:</strong> ${date}</p>
           <p style="margin: 8px 0 0;"><strong>Time:</strong> ${time}</p>
         </div>
@@ -68,21 +71,24 @@ export function getBookingCancellationEmail(
   clientName: string,
   meetingType: string,
   date: string,
-  time: string
+  time: string,
+  businessName?: string,
 ) {
+  const fromLabel = businessName ?? 'MeetingScheduler'
   return {
-    subject: `Booking Cancelled: ${meetingType}`,
+    subject: `Booking Cancelled: ${meetingType} — ${fromLabel}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #1a1a1a;">Booking Cancelled</h2>
         <p>Hi ${clientName},</p>
-        <p>Your meeting has been cancelled.</p>
+        <p>Your meeting with <strong>${fromLabel}</strong> has been cancelled.</p>
         <div style="background: #f4f4f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <p style="margin: 0;"><strong>Meeting Type:</strong> ${meetingType}</p>
+          <p style="margin: 0;"><strong>Business:</strong> ${fromLabel}</p>
+          <p style="margin: 8px 0 0;"><strong>Meeting Type:</strong> ${meetingType}</p>
           <p style="margin: 8px 0 0;"><strong>Date:</strong> ${date}</p>
           <p style="margin: 8px 0 0;"><strong>Time:</strong> ${time}</p>
         </div>
-        <p>If you&apos;d like to reschedule, please visit our booking page.</p>
+        <p>If you&apos;d like to reschedule, please visit the booking page.</p>
       </div>
     `,
   }
@@ -94,15 +100,17 @@ export function getRescheduleEmail(
   oldDate: string,
   oldTime: string,
   newDate: string,
-  newTime: string
+  newTime: string,
+  businessName?: string,
 ) {
+  const fromLabel = businessName ?? 'MeetingScheduler'
   return {
-    subject: `Meeting Rescheduled: ${meetingType}`,
+    subject: `Meeting Rescheduled: ${meetingType} — ${fromLabel}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #1a1a1a;">Meeting Rescheduled</h2>
         <p>Hi ${clientName},</p>
-        <p>Your meeting has been rescheduled.</p>
+        <p>Your meeting with <strong>${fromLabel}</strong> has been rescheduled.</p>
         <div style="background: #fee2e2; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <p style="margin: 0; color: #991b1b;"><strong>Previous Time:</strong></p>
           <p style="margin: 4px 0 0; text-decoration: line-through;">${oldDate} at ${oldTime}</p>
@@ -126,20 +134,23 @@ export function getAdminNotificationEmail(
   meetingType: string,
   date: string,
   time: string,
-  action: 'booked' | 'cancelled' | 'rescheduled'
+  action: 'booked' | 'cancelled' | 'rescheduled',
+  businessName?: string,
 ) {
+  const fromLabel = businessName ?? 'MeetingScheduler'
   const actionText = action === 'booked' ? 'New Booking' : action === 'cancelled' ? 'Booking Cancelled' : 'Booking Rescheduled'
   const bgColor = action === 'booked' ? '#dcfce7' : action === 'cancelled' ? '#fee2e2' : '#fef9c3'
   
   return {
-    subject: `${actionText}: ${meetingType} with ${clientName}`,
+    subject: `${actionText}: ${meetingType} with ${clientName} — ${fromLabel}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #1a1a1a;">${actionText}</h2>
         <p>Hi ${adminName},</p>
-        <p>A client has ${action} a meeting.</p>
+        <p>A client has ${action} a meeting for <strong>${fromLabel}</strong>.</p>
         <div style="background: ${bgColor}; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <p style="margin: 0;"><strong>Client:</strong> ${clientName} (${clientEmail})</p>
+          <p style="margin: 0;"><strong>Business:</strong> ${fromLabel}</p>
+          <p style="margin: 8px 0 0;"><strong>Client:</strong> ${clientName} (${clientEmail})</p>
           <p style="margin: 8px 0 0;"><strong>Meeting Type:</strong> ${meetingType}</p>
           <p style="margin: 8px 0 0;"><strong>Date:</strong> ${date}</p>
           <p style="margin: 8px 0 0;"><strong>Time:</strong> ${time}</p>

@@ -17,9 +17,11 @@ import type { AvailabilitySlot, MeetingType } from '@/lib/db/schema'
 interface BookingCalendarProps {
   slots: AvailabilitySlot[]
   meetingTypes: MeetingType[]
+  businessId: number
+  businessSlug?: string
 }
 
-export function BookingCalendar({ slots, meetingTypes }: BookingCalendarProps) {
+export function BookingCalendar({ slots, meetingTypes, businessId, businessSlug }: BookingCalendarProps) {
   const router = useRouter()
   const { t, language } = useLanguage()
   const [selectedDate, setSelectedDate] = useState<Date | undefined>()
@@ -61,11 +63,13 @@ export function BookingCalendar({ slots, meetingTypes }: BookingCalendarProps) {
     setLoading(true)
     try {
       await createBooking({
+        businessId,
         slotId: selectedSlot.id,
         meetingTypeId: selectedMeetingType.id,
-        notes: notes || undefined
+        notes: notes || undefined,
       })
-      router.push('/bookings')
+      const target = businessSlug ? `/${businessSlug}/bookings` : '/bookings'
+      router.push(target)
       router.refresh()
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to create booking')

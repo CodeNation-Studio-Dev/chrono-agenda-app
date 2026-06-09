@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { getCurrentUser } from '@/app/actions/scheduling'
-import { getBusinessSettings } from '@/app/actions/business'
 import { Navbar } from '@/components/navbar'
 import { HomeContent } from '@/components/home-content'
 
@@ -15,16 +14,14 @@ export default async function HomePage() {
     if (user.role === 'admin') {
       redirect('/admin')
     } else {
-      redirect('/book')
+      redirect('/admin')
     }
   }
-
-  const businessSettings = await getBusinessSettings()
 
   return (
     <div className="min-h-svh bg-background">
       <Navbar user={user} />
-      <HomeContent businessSettings={businessSettings} />
+      <HomeContent />
     </div>
   )
 }

@@ -22,6 +22,7 @@ import type { MeetingType } from '@/lib/db/schema'
 
 interface MeetingTypesManagerProps {
   meetingTypes: MeetingType[]
+  businessId: number
 }
 
 const COLOR_OPTIONS = [
@@ -35,7 +36,7 @@ const COLOR_OPTIONS = [
   '#84cc16', // lime
 ]
 
-export function MeetingTypesManager({ meetingTypes }: MeetingTypesManagerProps) {
+export function MeetingTypesManager({ meetingTypes, businessId }: MeetingTypesManagerProps) {
   const router = useRouter()
   const { t, language } = useLanguage()
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -69,9 +70,9 @@ export function MeetingTypesManager({ meetingTypes }: MeetingTypesManagerProps) 
     setLoading(true)
     try {
       if (editingType) {
-        await updateMeetingType(editingType.id, { name, description, duration, color })
+        await updateMeetingType(editingType.id, businessId, { name, description, duration, color })
       } else {
-        await createMeetingType({ name, description, duration, color })
+        await createMeetingType(businessId, { name, description, duration, color })
       }
       setDialogOpen(false)
       resetForm()
@@ -85,7 +86,7 @@ export function MeetingTypesManager({ meetingTypes }: MeetingTypesManagerProps) 
 
   const handleToggleActive = async (type: MeetingType) => {
     try {
-      await updateMeetingType(type.id, { isActive: !type.isActive })
+      await updateMeetingType(type.id, businessId, { isActive: !type.isActive })
       router.refresh()
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to update meeting type')
@@ -95,7 +96,7 @@ export function MeetingTypesManager({ meetingTypes }: MeetingTypesManagerProps) 
   const handleDelete = async (id: number) => {
     if (!confirm(language === 'es' ? 'Estas seguro de que quieres eliminar este tipo de cita?' : 'Are you sure you want to delete this meeting type?')) return
     try {
-      await deleteMeetingType(id)
+      await deleteMeetingType(id, businessId)
       router.refresh()
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to delete meeting type')
