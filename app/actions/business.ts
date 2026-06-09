@@ -3,7 +3,7 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { user, businesses, businessMembers } from '@/lib/db/schema'
-import { and, eq } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 
@@ -43,6 +43,19 @@ export async function getAdminBusinesses() {
 export async function getBusinessBySlug(slug: string) {
   const rows = await db.select().from(businesses).where(eq(businesses.slug, slug)).limit(1)
   return rows[0] ?? null
+}
+
+// Get the first business slug a user belongs to (used for default client redirects)
+export async function getFirstBusinessSlugForUser(userId: string): Promise<string | null> {
+  const rows = await db
+    .select({ slug: businesses.slug })
+    .from(businessMembers)
+    .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
+    .where(eq(businessMembers.userId, userId))
+    .orderBy(asc(businessMembers.joinedAt))
+    .limit(1)
+
+  return rows[0]?.slug ?? null
 }
 
 // Admin: create a new business
