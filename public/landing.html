@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chrono - Manage Your Bookings Effortlessly</title>
+    <meta name="description" content="Streamline your client meetings with our intelligent scheduling platform. Start with 1 month free trial, then just $300 MXN/month.">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #3b82f6;
+            --primary-light: #60a5fa;
+            --primary-dark: #1e40af;
+            --foreground: #1f2937;
+            --muted: #6b7280;
+            --muted-light: #f3f4f6;
+            --white: #ffffff;
+            --border: #e5e7eb;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            color: var(--foreground);
+            line-height: 1.6;
+            background-color: var(--white);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Navigation */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .nav-center {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--foreground);
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+
+        nav a:hover {
+            color: var(--primary);
+        }
+
+        /* Language Selector */
+        .language-toggle {
+            position: relative;
+        }
+
+        .lang-btn {
+            background: none;
+            border: 2px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--foreground);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .lang-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .lang-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-top: 8px;
+            z-index: 1000;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            min-width: 150px;
+        }
+
+        .lang-dropdown.show {
+            display: block;
+        }
+
+        .lang-option {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-size: 14px;
+            color: var(--foreground);
+        }
+
+        .lang-option:hover,
+        .lang-option.active {
+            background-color: var(--muted-light);
+            color: var(--primary);
+        }
+
+        .lang-option:not(:last-child) {
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(59, 130, 246, 0.02) 100%);
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 900;
+            margin-bottom: 20px;
+            color: var(--foreground);
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 20px;
+            color: var(--muted);
+            max-width: 600px;
+            margin: 0 auto 40px;
+            line-height: 1.6;
+        }
+
+        .badge {
+            display: inline-block;
+            background-color: var(--primary-light);
+            color: var(--white);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 14px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        .trial-note {
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 0;
+        }
+
+        .section-title {
+            font-size: 42px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 50px;
+            color: var(--foreground);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .feature-card {
+            padding: 30px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(59, 130, 246, 0.1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 16px;
+        }
+
+        .feature-card h3 {
+            font-size: 20px;
+            margin-bottom: 12px;
+            color: var(--foreground);
+        }
+
+        .feature-card p {
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        /* Pricing Section */
+        .pricing {
+            background-color: var(--muted-light);
+            padding: 80px 0;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .pricing-card {
+            background-color: var(--white);
+            padding: 40px;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .pricing-card.featured {
+            border-color: var(--primary);
+            transform: scale(1.05);
+            box-shadow: 0 20px 40px rgba(59, 130, 246, 0.2);
+        }
+
+        .badge-featured {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: var(--white);
+            padding: 6px 20px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .pricing-card h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: var(--foreground);
+        }
+
+        .pricing-description {
+            color: var(--muted);
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .price {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .price-period {
+            color: var(--muted);
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        .features-list {
+            list-style: none;
+            margin-bottom: 30px;
+        }
+
+        .features-list li {
+            padding: 12px 0;
+            color: var(--foreground);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            font-size: 15px;
+        }
+
+        .features-list li:last-child {
+            border-bottom: none;
+        }
+
+        .check {
+            color: var(--primary);
+            font-weight: bold;
+            margin-right: 12px;
+            font-size: 20px;
+        }
+
+        .pricing-card .btn {
+            width: 100%;
+            text-align: center;
+        }
+
+        .trial-disclaimer {
+            font-size: 12px;
+            color: var(--muted);
+            text-align: center;
+            margin-top: 12px;
+        }
+
+        /* CodeNation Section */
+        .codenation {
+            padding: 80px 0;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0.04) 100%);
+        }
+
+        .codenation-content {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .codenation-content h2 {
+            font-size: 42px;
+            margin-bottom: 20px;
+            color: var(--foreground);
+        }
+
+        .codenation-content p {
+            font-size: 18px;
+            color: var(--muted);
+            margin-bottom: 40px;
+            line-height: 1.8;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+
+        .stat-item {
+            background-color: var(--white);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .codenation-links {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .codenation-footer {
+            border-top: 1px solid var(--border);
+            padding-top: 30px;
+            margin-top: 30px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .codenation-footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .codenation-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Final CTA Section */
+        .final-cta {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--white);
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .final-cta h2 {
+            font-size: 42px;
+            margin-bottom: 20px;
+        }
+
+        .final-cta p {
+            font-size: 18px;
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            opacity: 0.95;
+            line-height: 1.8;
+        }
+
+        .final-cta .cta-buttons {
+            margin-bottom: 0;
+        }
+
+        .btn-light {
+            background-color: var(--white);
+            color: var(--primary);
+        }
+
+        .btn-light:hover {
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+
+        .btn-outline-light {
+            background-color: transparent;
+            color: var(--white);
+            border: 2px solid var(--white);
+        }
+
+        .btn-outline-light:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--foreground);
+            color: var(--white);
+            text-align: center;
+            padding: 30px 0;
+            font-size: 14px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            nav {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            nav ul {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+
+            .hero h1 {
+                font-size: 36px;
+            }
+
+            .hero p {
+                font-size: 18px;
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .section-title {
+                font-size: 32px;
+            }
+
+            .pricing-card.featured {
+                transform: scale(1);
+            }
+
+            .final-cta h2 {
+                font-size: 32px;
+            }
+
+            .final-cta p {
+                font-size: 16px;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="container">
+        <div class="logo">Chrono</div>
+        <ul class="nav-center">
+            <li><a href="#features">Características</a></li>
+            <li><a href="#pricing">Precios</a></li>
+            <li><a href="#about">Sobre Nosotros</a></li>
+            <li><a href="#contact">Contacto</a></li>
+        </ul>
+        <div class="nav-right">
+            <div class="language-toggle">
+                <button class="lang-btn" id="langToggle">
+                    <span>🌐</span>
+                    <span id="langCode">EN</span>
+                </button>
+                <div class="lang-dropdown" id="langDropdown">
+                    <button class="lang-option " data-lang="en">
+                        <span>🇺🇸</span> English
+                    </button>
+                    <button class="lang-option active" data-lang="es">
+                        <span>🇪🇸</span> Español
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="text-center mb-12">
+                <div class="badge" data-i18n="badge">✨ Streamline Your Business Today</div>
+                <h1 data-i18n="hero_title">Manage Client Meetings Effortlessly</h1>
+                <p data-i18n="hero_subtitle">Set your availability, let clients book their preferred time slots, and focus on what matters most—delivering great service.</p>
+                <div class="cta-buttons">
+                    <button class="btn btn-primary" data-i18n-btn="start_trial">Start Free Trial →</button>
+                    <button class="btn btn-secondary" data-i18n-btn="learn_more">Learn More</button>
+                </div>
+                <p class="trial-note" data-i18n="trial_note">🎁 1 month free trial. No credit card required.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <h2 class="section-title" data-i18n="features_title">Why Choose Chrono?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⏰</div>
+                    <h3 data-i18n="feature1_title">Easy Scheduling</h3>
+                    <p data-i18n="feature1_desc">Set your availability once and let clients book their preferred time slots automatically.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👥</div>
+                    <h3 data-i18n="feature2_title">Manage Multiple Clients</h3>
+                    <p data-i18n="feature2_desc">Handle unlimited bookings with organized client management and history tracking.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3 data-i18n="feature3_title">Fully Customizable</h3>
+                    <p data-i18n="feature3_desc">Customize meeting types, durations, and your business branding to match your needs.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📧</div>
+                    <h3 data-i18n="feature4_title">Automated Notifications</h3>
+                    <p data-i18n="feature4_desc">Clients receive instant booking confirmations via email automatically.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📞</div>
+                    <h3 data-i18n="feature5_title">Manual Override</h3>
+                    <p data-i18n="feature5_desc">Schedule meetings for walk-in or phone clients with just a few clicks.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔐</div>
+                    <h3 data-i18n="feature6_title">Role-Based Access</h3>
+                    <p data-i18n="feature6_desc">Separate admin dashboard for full control and management capabilities.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <h2 class="section-title" data-i18n="pricing_title">Simple, Transparent Pricing</h2>
+            <div class="pricing-grid">
+                <!-- Free Trial Card -->
+                <div class="pricing-card">
+                    <h3 data-i18n="free_trial_title">Free Trial</h3>
+                    <p class="pricing-description" data-i18n="free_trial_desc">Perfect way to try all features</p>
+                    <div class="price" data-i18n="price_free">$0 MXN</div>
+                    <p class="price-period" data-i18n="for_one_month">for 1 month</p>
+                    <ul class="features-list">
+                        <li data-i18n="feature_access"><span class="check">✓</span>1 month full access</li>
+                        <li data-i18n="feature_types"><span class="check">✓</span>Unlimited meeting types</li>
+                        <li data-i18n="feature_bookings"><span class="check">✓</span>Unlimited bookings</li>
+                        <li data-i18n="feature_email"><span class="check">✓</span>Email notifications</li>
+                        <li data-i18n="feature_custom"><span class="check">✓</span>Business customization</li>
+                    </ul>
+                    <button class="btn btn-secondary" data-i18n-btn="start_trial">Start Free Trial</button>
+                    <p class="trial-disclaimer" data-i18n="no_card_required">No credit card required</p>
+                </div>
+
+                <!-- Professional Plan Card -->
+                <div class="pricing-card featured">
+                    <div class="badge-featured" data-i18n="recommended">RECOMMENDED</div>
+                    <h3 data-i18n="professional_title">Professional</h3>
+                    <p class="pricing-description" data-i18n="professional_desc">For growing businesses</p>
+                    <div class="price" data-i18n="price_pro">$300 MXN</div>
+                    <p class="price-period" data-i18n="price_per_month">per month</p>
+                    <ul class="features-list">
+                        <li data-i18n="feature_everything"><span class="check">✓</span>Everything in Free Trial</li>
+                        <li data-i18n="feature_support"><span class="check">✓</span>Priority support</li>
+                        <li data-i18n="feature_analytics"><span class="check">✓</span>Advanced analytics</li>
+                        <li data-i18n="feature_branding"><span class="check">✓</span>Custom branding</li>
+                        <li data-i18n="feature_history"><span class="check">✓</span>Meeting history reports</li>
+                        <li data-i18n="feature_admins"><span class="check">✓</span>Up to 3 admin users</li>
+                    </ul>
+                    <button class="btn btn-primary" data-i18n-btn="start_trial">Start Free Trial</button>
+                    <p class="trial-disclaimer" data-i18n="auto_renew">Auto-renews at $300 MXN/month after trial</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CodeNation Studio Section -->
+    <section class="codenation" id="about">
+        <div class="container">
+            <div class="codenation-content">
+                <h2 data-i18n="codenation_title">Built by CodeNation Studio</h2>
+                <p data-i18n="codenation_desc">Trusted by businesses worldwide to manage their client meetings efficiently. CodeNation Studio specializes in creating innovative solutions for modern business challenges.</p>
+
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-number">500+</div>
+                        <div class="stat-label" data-i18n="users">Active Users</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">10K+</div>
+                        <div class="stat-label" data-i18n="meetings">Meetings Scheduled</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">99.9%</div>
+                        <div class="stat-label" data-i18n="uptime">Uptime Guarantee</div>
+                    </div>
+                </div>
+
+                <div class="codenation-links">
+                    <button class="btn btn-primary" data-i18n-btn="visit_codenation">Visit CodeNation Studio</button>
+                    <button class="btn btn-secondary" data-i18n-btn="contact_us">Contact Us</button>
+                </div>
+
+                <div class="codenation-footer">
+                    <p data-i18n="footer_text">© 2026 CodeNation Studio. All rights reserved. | 
+                    <a href="https://codenation-studio.com" target="_blank">www.codenation-studio.com</a></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA Section -->
+    <section class="final-cta">
+        <div class="container">
+            <h2 data-i18n="cta_title">Ready to simplify your scheduling?</h2>
+            <p data-i18n="cta_desc">Join hundreds of businesses using Chrono to manage their bookings. Start your 1-month free trial today—no credit card required.</p>
+            <div class="cta-buttons">
+                <button class="btn btn-light" data-i18n-btn="get_started">Get Started Free →</button>
+                <button class="btn btn-outline-light" data-i18n-btn="learn_more">Learn More</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p data-i18n="copyright">&copy; 2026 Chrono by CodeNation Studio. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Translations
+        const translations = {
+            en: {
+                badge: "✨ Streamline Your Business Today",
+                hero_title: "Manage Client Meetings Effortlessly",
+                hero_subtitle: "Set your availability, let clients book their preferred time slots, and focus on what matters most—delivering great service.",
+                trial_note: "🎁 1 month free trial. No credit card required.",
+                start_trial: "Start Free Trial →",
+                learn_more: "Learn More",
+                features_title: "Why Choose Chrono?",
+                feature1_title: "Easy Scheduling",
+                feature1_desc: "Set your availability once and let clients book their preferred time slots automatically.",
+                feature2_title: "Manage Multiple Clients",
+                feature2_desc: "Handle unlimited bookings with organized client management and history tracking.",
+                feature3_title: "Fully Customizable",
+                feature3_desc: "Customize meeting types, durations, and your business branding to match your needs.",
+                feature4_title: "Automated Notifications",
+                feature4_desc: "Clients receive instant booking confirmations via email automatically.",
+                feature5_title: "Manual Override",
+                feature5_desc: "Schedule meetings for walk-in or phone clients with just a few clicks.",
+                feature6_title: "Role-Based Access",
+                feature6_desc: "Separate admin dashboard for full control and management capabilities.",
+                pricing_title: "Simple, Transparent Pricing",
+                free_trial_title: "Free Trial",
+                free_trial_desc: "Perfect way to try all features",
+                professional_title: "Professional",
+                professional_desc: "For growing businesses",
+                price_per_month: "per month",
+                price_free: "$0 MXN",
+                price_pro: "$300 MXN",
+                for_one_month: "for 1 month",
+                no_card_required: "No credit card required",
+                auto_renew: "Auto-renews at $300 MXN/month after trial",
+                feature_access: "1 month full access",
+                feature_types: "Unlimited meeting types",
+                feature_bookings: "Unlimited bookings",
+                feature_email: "Email notifications",
+                feature_custom: "Business customization",
+                feature_everything: "Everything in Free Trial",
+                feature_support: "Priority support",
+                feature_analytics: "Advanced analytics",
+                feature_branding: "Custom branding",
+                feature_history: "Meeting history reports",
+                feature_admins: "Up to 3 admin users",
+                recommended: "RECOMMENDED",
+                codenation_title: "Built by CodeNation Studio",
+                codenation_desc: "Trusted by businesses worldwide to manage their client meetings efficiently. CodeNation Studio specializes in creating innovative solutions for modern business challenges.",
+                users: "Active Users",
+                meetings: "Meetings Scheduled",
+                uptime: "Uptime Guarantee",
+                visit_codenation: "Visit CodeNation Studio",
+                contact_us: "Contact Us",
+                footer_text: "© 2026 CodeNation Studio. All rights reserved. | www.codenation-studio.com",
+                cta_title: "Ready to simplify your scheduling?",
+                cta_desc: "Join hundreds of businesses using Chrono to manage their bookings. Start your 1-month free trial today—no credit card required.",
+                get_started: "Get Started Free →",
+                copyright: "© 2026 Chrono by CodeNation Studio. All rights reserved."
+            },
+            es: {
+                badge: "✨ Simplifica Tu Negocio Hoy",
+                hero_title: "Gestiona Reuniones con Clientes sin Esfuerzo",
+                hero_subtitle: "Establece tu disponibilidad, deja que los clientes reserven sus franjas horarias preferidas y enfócate en lo que importa: brindar un gran servicio.",
+                trial_note: "🎁 1 mes de prueba gratuita. No se requiere tarjeta de crédito.",
+                start_trial: "Iniciar Prueba Gratuita →",
+                learn_more: "Aprende Más",
+                features_title: "¿Por Qué Elegir Chrono?",
+                feature1_title: "Programación Fácil",
+                feature1_desc: "Establece tu disponibilidad una vez y deja que los clientes reserven automáticamente.",
+                feature2_title: "Gestiona Múltiples Clientes",
+                feature2_desc: "Maneja reservas ilimitadas con gestión de clientes organizada y seguimiento del historial.",
+                feature3_title: "Totalmente Personalizable",
+                feature3_desc: "Personaliza tipos de reuniones, duraciones y marca tu negocio según tus necesidades.",
+                feature4_title: "Notificaciones Automáticas",
+                feature4_desc: "Los clientes reciben confirmaciones de reserva instantáneamente por correo electrónico.",
+                feature5_title: "Anulación Manual",
+                feature5_desc: "Programa reuniones para clientes presenciales o por teléfono fácilmente.",
+                feature6_title: "Acceso Basado en Roles",
+                feature6_desc: "Panel de administrador separado para control y gestión completa.",
+                pricing_title: "Precios Simples y Transparentes",
+                free_trial_title: "Prueba Gratuita",
+                free_trial_desc: "La forma perfecta de probar todas las funciones",
+                professional_title: "Profesional",
+                professional_desc: "Para negocios en crecimiento",
+                price_per_month: "por mes",
+                price_free: "$0 MXN",
+                price_pro: "$300 MXN",
+                for_one_month: "por 1 mes",
+                no_card_required: "No se requiere tarjeta de crédito",
+                auto_renew: "Se renueva automáticamente a $300 MXN/mes después de la prueba",
+                feature_access: "1 mes de acceso completo",
+                feature_types: "Tipos de reuniones ilimitados",
+                feature_bookings: "Reservas ilimitadas",
+                feature_email: "Notificaciones por correo",
+                feature_custom: "Personalización empresarial",
+                feature_everything: "Todo en Prueba Gratuita",
+                feature_support: "Soporte prioritario",
+                feature_analytics: "Análisis avanzados",
+                feature_branding: "Marca personalizada",
+                feature_history: "Informes del historial de reuniones",
+                feature_admins: "Hasta 3 usuarios administradores",
+                recommended: "RECOMENDADO",
+                codenation_title: "Creado por CodeNation Studio",
+                codenation_desc: "Confiado por empresas en todo el mundo para gestionar sus reuniones con clientes de manera eficiente. CodeNation Studio se especializa en crear soluciones innovadoras para desafíos comerciales modernos.",
+                users: "Usuarios Activos",
+                meetings: "Reuniones Programadas",
+                uptime: "Garantía de Tiempo de Actividad",
+                visit_codenation: "Visita CodeNation Studio",
+                contact_us: "Contáctanos",
+                footer_text: "© 2026 CodeNation Studio. Todos los derechos reservados. | www.codenation-studio.com",
+                cta_title: "¿Listo para simplificar tu programación?",
+                cta_desc: "Únete a cientos de empresas que utilizan Chrono para gestionar sus reservas. Comienza tu prueba gratuita de 1 mes hoy: sin tarjeta de crédito requerida.",
+                get_started: "Comenzar Gratis →",
+                copyright: "© 2026 Chrono by CodeNation Studio. Todos los derechos reservados."
+            },
+        };
+
+        let currentLang = localStorage.getItem('lang') || 'en';
+
+        function updateLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('lang', lang);
+            
+            document.documentElement.lang = lang;
+            document.getElementById('langCode').textContent = lang.toUpperCase();
+            
+            // Update all elements with data-i18n attribute
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (translations[lang][key]) {
+                    if (element.tagName === 'P' && element.querySelector('a')) {
+                         element.innerHTML = translations[lang][key];
+                    } else {
+                         element.textContent = translations[lang][key];
+                    }
+                }
+            });
+
+            // Update buttons with data-i18n-btn attribute
+            document.querySelectorAll('[data-i18n-btn]').forEach(button => {
+                const key = button.getAttribute('data-i18n-btn');
+                if (translations[lang][key]) {
+                    button.textContent = translations[lang][key];
+                }
+            });
+
+            // Update language dropdown active state
+            document.querySelectorAll('.lang-option').forEach(option => {
+                option.classList.remove('active');
+                if (option.getAttribute('data-lang') === lang) {
+                    option.classList.add('active');
+                }
+            });
+        }
+
+        // Language toggle functionality
+        document.getElementById('langToggle').addEventListener('click', function() {
+            document.getElementById('langDropdown').classList.toggle('show');
+        });
+
+        document.querySelectorAll('.lang-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const lang = this.getAttribute('data-lang');
+                updateLanguage(lang);
+                document.getElementById('langDropdown').classList.remove('show');
+            });
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const toggle = document.getElementById('langToggle');
+            const dropdown = document.getElementById('langDropdown');
+            if (!toggle.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // Initialize language on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateLanguage(currentLang);
+
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+
+            // Button click handlers (Supports English, Spanish, and Finnish keywords)
+            document.querySelectorAll('.btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const text = this.textContent;
+                    if (text.includes('Start') || text.includes('Iniciar') || text.includes('Get Started') || text.includes('Comenzar') || text.includes('Aloita')) {
+                        window.location.href = '/sign-up';
+                    } else if (text.includes('Visit') || text.includes('Visita') || text.includes('Vieraile')) {
+                        window.open('https://codenation-studio.com', '_blank');
+                    } else if (text.includes('Contact') || text.includes('Contáctanos') || text.includes('Ota yhteyttä')) {
+                        window.location.href = 'mailto:info@codenation-studio.com';
+                    } else if (text.includes('Learn') || text.includes('Aprende') || text.includes('Lue')) {
+                        document.querySelector('#features').scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

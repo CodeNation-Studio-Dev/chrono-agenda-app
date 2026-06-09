@@ -1,0 +1,12 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/admin/page": "/admin",
+  "/api/auth/[...all]/route": "/api/auth/[...all]",
+  "/api/setup-admin/route": "/api/setup-admin",
+  "/book/page": "/book",
+  "/bookings/page": "/bookings",
+  "/page": "/",
+  "/sign-in/page": "/sign-in",
+  "/sign-up/page": "/sign-up"
+}
