@@ -104,7 +104,7 @@
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "/home/mitnik/Downloads/client-meeting-scheduler",
+    "outputFileTracingRoot": "C:\\chrono-agenda-app",
     "cacheComponents": false,
     "cacheLife": {
       "default": {
@@ -166,7 +166,7 @@
       "proxyPrefetch": "flexible",
       "optimisticClientCache": true,
       "manualClientBasePath": false,
-      "cpus": 7,
+      "cpus": 13,
       "memoryBasedWorkersCount": false,
       "imgOptConcurrency": null,
       "imgOptTimeoutInSeconds": 7,
@@ -304,29 +304,29 @@
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.mjs",
     "turbopack": {
-      "root": "/home/mitnik/Downloads/client-meeting-scheduler"
+      "root": "C:\\chrono-agenda-app"
     },
     "distDirRoot": "build"
   },
-  "appDir": "/home/mitnik/Downloads/client-meeting-scheduler",
+  "appDir": "C:\\chrono-agenda-app",
   "relativeAppDir": "",
   "files": [
-    "build/routes-manifest.json",
-    "build/server/pages-manifest.json",
-    "build/build-manifest.json",
-    "build/prerender-manifest.json",
-    "build/server/functions-config-manifest.json",
-    "build/server/middleware-manifest.json",
-    "build/server/middleware-build-manifest.js",
-    "build/server/app-paths-manifest.json",
-    "build/app-path-routes-manifest.json",
-    "build/server/server-reference-manifest.js",
-    "build/server/server-reference-manifest.json",
-    "build/server/prefetch-hints.json",
-    "build/BUILD_ID",
-    "build/server/next-font-manifest.js",
-    "build/server/next-font-manifest.json",
-    "build/required-server-files.json"
+    "build\\routes-manifest.json",
+    "build\\server\\pages-manifest.json",
+    "build\\build-manifest.json",
+    "build\\prerender-manifest.json",
+    "build\\server\\functions-config-manifest.json",
+    "build\\server\\middleware-manifest.json",
+    "build\\server\\middleware-build-manifest.js",
+    "build\\server\\app-paths-manifest.json",
+    "build\\app-path-routes-manifest.json",
+    "build\\server\\server-reference-manifest.js",
+    "build\\server\\server-reference-manifest.json",
+    "build\\server\\prefetch-hints.json",
+    "build\\BUILD_ID",
+    "build\\server\\next-font-manifest.js",
+    "build\\server\\next-font-manifest.json",
+    "build\\required-server-files.json"
   ],
   "ignore": []
 }

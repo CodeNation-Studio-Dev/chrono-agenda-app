@@ -29,6 +29,38 @@
         "nxtPall": "nxtPall"
       },
       "namedRegex": "^/api/auth/(?<nxtPall>.+?)(?:/)?$"
+    },
+    {
+      "page": "/[businessSlug]/book",
+      "regex": "^/([^/]+?)/book(?:/)?$",
+      "routeKeys": {
+        "nxtPbusinessSlug": "nxtPbusinessSlug"
+      },
+      "namedRegex": "^/(?<nxtPbusinessSlug>[^/]+?)/book(?:/)?$"
+    },
+    {
+      "page": "/[businessSlug]/bookings",
+      "regex": "^/([^/]+?)/bookings(?:/)?$",
+      "routeKeys": {
+        "nxtPbusinessSlug": "nxtPbusinessSlug"
+      },
+      "namedRegex": "^/(?<nxtPbusinessSlug>[^/]+?)/bookings(?:/)?$"
+    },
+    {
+      "page": "/[businessSlug]/sign-in",
+      "regex": "^/([^/]+?)/sign\\-in(?:/)?$",
+      "routeKeys": {
+        "nxtPbusinessSlug": "nxtPbusinessSlug"
+      },
+      "namedRegex": "^/(?<nxtPbusinessSlug>[^/]+?)/sign\\-in(?:/)?$"
+    },
+    {
+      "page": "/[businessSlug]/sign-up",
+      "regex": "^/([^/]+?)/sign\\-up(?:/)?$",
+      "routeKeys": {
+        "nxtPbusinessSlug": "nxtPbusinessSlug"
+      },
+      "namedRegex": "^/(?<nxtPbusinessSlug>[^/]+?)/sign\\-up(?:/)?$"
     }
   ],
   "staticRoutes": [

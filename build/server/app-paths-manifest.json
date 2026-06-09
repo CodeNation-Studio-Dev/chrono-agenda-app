@@ -1,4 +1,8 @@
 {
+  "/[businessSlug]/book/page": "app/[businessSlug]/book/page.js",
+  "/[businessSlug]/bookings/page": "app/[businessSlug]/bookings/page.js",
+  "/[businessSlug]/sign-in/page": "app/[businessSlug]/sign-in/page.js",
+  "/[businessSlug]/sign-up/page": "app/[businessSlug]/sign-up/page.js",
   "/_global-error/page": "app/_global-error/page.js",
   "/_not-found/page": "app/_not-found/page.js",
   "/admin/page": "app/admin/page.js",
