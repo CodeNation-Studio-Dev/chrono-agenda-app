@@ -14,12 +14,13 @@ export default async function HomePage() {
   if (user) {
     if (user.role === 'admin') {
       redirect('/admin')
-    } else {
+    } else if (user.role === 'client') {
       const firstBusinessSlug = await getFirstBusinessSlugForUser(user.id)
       if (firstBusinessSlug) {
         redirect(`/${firstBusinessSlug}/book`)
       }
     }
+    // If role is 'pending', show the home page with option to create a business
   }
 
   return (

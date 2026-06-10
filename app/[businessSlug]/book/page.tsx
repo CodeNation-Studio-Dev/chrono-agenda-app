@@ -23,7 +23,15 @@ export default async function BookPage({ params }: BookPageProps) {
 
   const user = await getCurrentUser()
   if (!user) redirect(`/${businessSlug}/sign-in`)
-  if (user.role === 'admin') redirect('/admin')
+  
+  // Admin users should be redirected to admin dashboard, unless they are also members of this business
+  if (user.role === 'admin') {
+    // Check if the admin is the owner of this business
+    if (business.ownerId === user.id) {
+      redirect('/admin')
+    }
+    // If admin is not the owner, allow them to view as a client (they must join first)
+  }
 
   // Auto-join the business when a client lands on the booking page
   await joinBusiness(business.id)
