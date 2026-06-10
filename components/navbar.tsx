@@ -40,7 +40,14 @@ export function Navbar({ user, businessSlug }: NavbarProps) {
           <LanguageSelector />
           {user ? (
             <>
-              {user.role === 'admin' ? (
+              {user.role === 'system_manager' ? (
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/system-manager" className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    <span className="hidden sm:inline">System</span>
+                  </Link>
+                </Button>
+              ) : user.role === 'admin' ? (
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/admin" className="flex items-center gap-2">
                     <Settings className="h-4 w-4" />

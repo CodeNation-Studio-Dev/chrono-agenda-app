@@ -23,6 +23,7 @@ export default async function BookPage({ params }: BookPageProps) {
 
   const user = await getCurrentUser()
   if (!user) redirect(`/${businessSlug}/sign-in`)
+  if (user.role === 'system_manager') redirect('/system-manager')
   
   // Admin users should be redirected to admin dashboard, unless they are also members of this business
   if (user.role === 'admin') {

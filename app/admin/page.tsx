@@ -21,6 +21,7 @@ export default async function AdminPage() {
 
   const user = await getCurrentUser()
   if (!user) redirect('/sign-in')
+  if (user.role === 'system_manager') redirect('/system-manager')
   if (user.role !== 'admin') redirect('/book')
 
   const businesses = await getAdminBusinesses()

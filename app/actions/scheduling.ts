@@ -84,6 +84,7 @@ async function requireBusinessOwner(adminId: string, businessId: number) {
     .where(and(eq(businesses.id, businessId), eq(businesses.ownerId, adminId)))
     .limit(1)
   if (biz.length === 0) throw new Error('Business not found')
+  if (biz[0].isDisabled) throw new Error('Business is disabled')
   return biz[0]
 }
 

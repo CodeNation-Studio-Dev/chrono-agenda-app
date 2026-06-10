@@ -8,7 +8,7 @@ export const user = pgTable('user', {
   emailVerified: boolean('emailVerified').notNull().default(false),
   image: text('image'),
   phone: text('phone'),
-  role: text('role').notNull().default('pending'), // 'pending', 'admin', or 'client'
+  role: text('role').notNull().default('pending'), // 'pending', 'admin', 'client', or 'system_manager'
   createdByAdmin: boolean('createdByAdmin').notNull().default(false),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
@@ -64,6 +64,11 @@ export const businesses = pgTable('businesses', {
   description: text('description'),
   logoUrl: text('logoUrl'),
   slug: text('slug').notNull().unique(), // URL-safe identifier
+  membershipPaid: boolean('membershipPaid').notNull().default(false),
+  membershipPaidAt: timestamp('membershipPaidAt'),
+  isDisabled: boolean('isDisabled').notNull().default(false),
+  disabledAt: timestamp('disabledAt'),
+  disabledReason: text('disabledReason'),
   ownerId: text('ownerId')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),

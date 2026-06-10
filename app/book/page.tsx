@@ -12,6 +12,7 @@ export default async function BookPage() {
 
   const user = await getCurrentUser()
   if (!user) redirect('/sign-in')
+  if (user.role === 'system_manager') redirect('/system-manager')
   if (user.role === 'admin') redirect('/admin')
 
   const firstBusinessSlug = await getFirstBusinessSlugForUser(user.id)

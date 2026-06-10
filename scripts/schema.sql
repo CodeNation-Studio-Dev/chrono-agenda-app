@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS "user" (
   "emailVerified"  BOOLEAN NOT NULL DEFAULT FALSE,
   image            TEXT,
   phone            TEXT,
-  role             TEXT NOT NULL DEFAULT 'client', -- 'admin' or 'client'
+  role             TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'admin' | 'client' | 'system_manager'
   "createdByAdmin" BOOLEAN NOT NULL DEFAULT FALSE,
   "createdAt"      TIMESTAMP NOT NULL DEFAULT NOW(),
   "updatedAt"      TIMESTAMP NOT NULL DEFAULT NOW()
@@ -81,6 +81,11 @@ CREATE TABLE IF NOT EXISTS "businesses" (
   description TEXT,
   "logoUrl"   TEXT,
   slug        TEXT NOT NULL UNIQUE,                        -- URL-safe identifier
+  "membershipPaid" BOOLEAN NOT NULL DEFAULT FALSE,
+  "membershipPaidAt" TIMESTAMP,
+  "isDisabled" BOOLEAN NOT NULL DEFAULT FALSE,
+  "disabledAt" TIMESTAMP,
+  "disabledReason" TEXT,
   "ownerId"   TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
   "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
   "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()

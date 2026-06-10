@@ -12,7 +12,9 @@ export default async function HomePage() {
 
   // If logged in, redirect based on role
   if (user) {
-    if (user.role === 'admin') {
+    if (user.role === 'system_manager') {
+      redirect('/system-manager')
+    } else if (user.role === 'admin') {
       redirect('/admin')
     } else if (user.role === 'client') {
       const firstBusinessSlug = await getFirstBusinessSlugForUser(user.id)

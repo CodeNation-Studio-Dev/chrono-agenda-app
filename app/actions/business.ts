@@ -36,12 +36,19 @@ function slugify(text: string): string {
 // Admin: list all businesses owned by the current admin
 export async function getAdminBusinesses() {
   const adminId = await requireAdmin()
-  return db.select().from(businesses).where(eq(businesses.ownerId, adminId))
+  return db
+    .select()
+    .from(businesses)
+    .where(and(eq(businesses.ownerId, adminId), eq(businesses.isDisabled, false)))
 }
 
 // Public: fetch a business by its slug (used on booking pages)
 export async function getBusinessBySlug(slug: string) {
-  const rows = await db.select().from(businesses).where(eq(businesses.slug, slug)).limit(1)
+  const rows = await db
+    .select()
+    .from(businesses)
+    .where(and(eq(businesses.slug, slug), eq(businesses.isDisabled, false)))
+    .limit(1)
   return rows[0] ?? null
 }
 
