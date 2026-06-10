@@ -137,6 +137,7 @@ export async function deleteBusiness(businessId: number) {
 }
 
 // Client or admin: join a business (idempotent — safe to call multiple times)
+// This also updates the user's role to 'client' if they were 'pending'
 export async function joinBusiness(businessId: number) {
   const userId = await getSessionUserId()
 
@@ -148,6 +149,12 @@ export async function joinBusiness(businessId: number) {
     .insert(businessMembers)
     .values({ businessId, userId })
     .onConflictDoNothing()
+
+  // Update user role from 'pending' to 'client' if needed
+  const userRecord = await db.select().from(user).where(eq(user.id, userId)).limit(1)
+  if (userRecord.length > 0 && userRecord[0].role === 'pending') {
+    await db.update(user).set({ role: 'client', updatedAt: new Date() }).where(eq(user.id, userId))
+  }
 }
 
 // Check whether the current user is a member of a business

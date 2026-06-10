@@ -137,6 +137,7 @@ export function UsersManager({ users, currentUserId, slots, meetingTypes, busine
           {users.map((u) => {
             const isSelf = u.id === currentUserId
             const isAdmin = u.role === 'admin'
+            const isPending = u.role === 'pending'
             return (
               <Card key={u.id} className="p-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -158,10 +159,12 @@ export function UsersManager({ users, currentUserId, slots, meetingTypes, busine
                           className={
                             isAdmin
                               ? 'bg-primary/10 text-primary hover:bg-primary/10'
-                              : 'bg-muted text-muted-foreground hover:bg-muted'
+                              : isPending
+                                ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100'
+                                : 'bg-muted text-muted-foreground hover:bg-muted'
                           }
                         >
-                          {isAdmin ? t.admin.roleAdmin : t.admin.roleClient}
+                          {isAdmin ? t.admin.roleAdmin : isPending ? t.admin.rolePending : t.admin.roleClient}
                         </Badge>
                         {u.createdByAdmin && (
                           <Badge variant="outline" className="text-xs">

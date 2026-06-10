@@ -13,7 +13,7 @@ async function getSessionUserId() {
   return session.user.id
 }
 
-// Upgrade user role to admin after successful payment
+// Upgrade user role to admin after successful payment and create business
 export async function upgradeUserToAdmin() {
   const userId = await getSessionUserId()
   
