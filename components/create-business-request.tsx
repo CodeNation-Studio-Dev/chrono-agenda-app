@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { PaymentForm } from '@/components/payment-form'
+import { useLanguage } from '@/lib/i18n/language-context'
 import { Briefcase, ArrowRight } from 'lucide-react'
 
 export function CreateBusinessRequest() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [showPayment, setShowPayment] = useState(false)
 
   if (showPayment) {
@@ -20,20 +22,20 @@ export function CreateBusinessRequest() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Briefcase className="h-5 w-5" />
-          Request to Create Business
+          {t.createBusiness.title}
         </CardTitle>
         <CardDescription>
-          Upgrade your account to Admin and create your own business. This requires a one-time payment.
+          {t.createBusiness.subtitle}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4 text-sm text-muted-foreground">
-          <p>As an Admin, you will be able to:</p>
+          <p>{t.createBusiness.featuresTitle}</p>
           <ul className="list-disc list-inside space-y-1 ml-2">
-            <li>Create and manage your own business</li>
-            <li>Set up meeting types and availability</li>
-            <li>Manage bookings and clients</li>
-            <li>Access the admin dashboard</li>
+            <li>{t.createBusiness.feature1}</li>
+            <li>{t.createBusiness.feature2}</li>
+            <li>{t.createBusiness.feature3}</li>
+            <li>{t.createBusiness.feature4}</li>
           </ul>
         </div>
       </CardContent>
@@ -42,7 +44,7 @@ export function CreateBusinessRequest() {
           onClick={() => setShowPayment(true)} 
           className="w-full"
         >
-          Continue to Payment
+          {t.createBusiness.continueToPayment}
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </CardFooter>

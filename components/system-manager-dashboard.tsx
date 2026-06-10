@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { setBusinessDisabledState, setBusinessMembershipPaid } from '@/app/actions/system-manager'
+import { useLanguage } from '@/lib/i18n/language-context'
 import { Building2, ShieldCheck, ShieldX, CreditCard, Users } from 'lucide-react'
 import type { Business, User } from '@/lib/db/schema'
 
@@ -33,6 +34,7 @@ export function SystemManagerDashboard({
   adminBusinessCounts,
 }: SystemManagerDashboardProps) {
   const router = useRouter()
+  const { t } = useLanguage()
   const [pendingBusinessId, setPendingBusinessId] = useState<number | null>(null)
   const [disableReasons, setDisableReasons] = useState<Record<number, string>>({})
 
@@ -42,7 +44,7 @@ export function SystemManagerDashboard({
       await setBusinessMembershipPaid(business.id, !business.membershipPaid)
       router.refresh()
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to update membership status')
+      alert(error instanceof Error ? error.message : t.systemManager.failedMembership)
     } finally {
       setPendingBusinessId(null)
     }
@@ -55,7 +57,7 @@ export function SystemManagerDashboard({
       await setBusinessDisabledState(business.id, !business.isDisabled, reason)
       router.refresh()
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to update disabled state')
+      alert(error instanceof Error ? error.message : t.systemManager.failedDisable)
     } finally {
       setPendingBusinessId(null)
     }
@@ -63,14 +65,19 @@ export function SystemManagerDashboard({
 
   return (
     <div className="space-y-8">
+      <header className="space-y-1">
+        <h1 className="text-2xl font-bold text-foreground">{t.systemManager.pageTitle}</h1>
+        <p className="text-muted-foreground">{t.systemManager.pageSubtitle}</p>
+      </header>
+
       <section className="space-y-4">
         <h2 className="text-xl font-semibold flex items-center gap-2">
           <Building2 className="h-5 w-5 text-primary" />
-          Businesses ({businesses.length})
+          {t.systemManager.businessesSection} ({businesses.length})
         </h2>
 
         {businesses.length === 0 ? (
-          <Card className="p-8 text-center text-muted-foreground">No businesses found.</Card>
+          <Card className="p-8 text-center text-muted-foreground">{t.systemManager.noBusinesses}</Card>
         ) : (
           <div className="space-y-4">
             {businesses.map(({ business, owner }) => {
@@ -83,29 +90,29 @@ export function SystemManagerDashboard({
                       <p className="font-semibold text-foreground">{business.name}</p>
                       <p className="text-sm text-muted-foreground">/{business.slug}/book</p>
                       <p className="text-sm text-muted-foreground">
-                        Owner: {owner.name} ({owner.email || 'No email'})
+                        {t.systemManager.owner} {owner.name} ({owner.email || t.systemManager.noEmail})
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Badge variant={business.membershipPaid ? 'default' : 'secondary'}>
-                        {business.membershipPaid ? 'Membership paid' : 'Membership unpaid'}
+                        {business.membershipPaid ? t.systemManager.membershipPaid : t.systemManager.membershipUnpaid}
                       </Badge>
                       <Badge variant={business.isDisabled ? 'destructive' : 'outline'}>
-                        {business.isDisabled ? 'Disabled' : 'Active'}
+                        {business.isDisabled ? t.systemManager.disabled : t.systemManager.active}
                       </Badge>
                     </div>
                   </div>
 
                   <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
-                    <p>Created: {formatDate(business.createdAt)}</p>
-                    <p>Paid at: {formatDate(business.membershipPaidAt)}</p>
-                    <p>Disabled at: {formatDate(business.disabledAt)}</p>
-                    <p>Reason: {business.disabledReason || 'N/A'}</p>
+                    <p>{t.systemManager.createdAt} {formatDate(business.createdAt)}</p>
+                    <p>{t.systemManager.paidAt} {formatDate(business.membershipPaidAt)}</p>
+                    <p>{t.systemManager.disabledAt} {formatDate(business.disabledAt)}</p>
+                    <p>{t.systemManager.reason} {business.disabledReason || t.systemManager.na}</p>
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-center">
                     <Input
-                      placeholder="Disable reason (optional)"
+                      placeholder={t.systemManager.disableReasonPlaceholder}
                       value={disableReasons[business.id] ?? ''}
                       onChange={(event) =>
                         setDisableReasons((prev) => ({ ...prev, [business.id]: event.target.value }))
@@ -117,7 +124,7 @@ export function SystemManagerDashboard({
                       disabled={isPending}
                     >
                       <CreditCard className="h-4 w-4" />
-                      {business.membershipPaid ? 'Mark unpaid' : 'Mark paid'}
+                      {business.membershipPaid ? t.systemManager.markUnpaid : t.systemManager.markPaid}
                     </Button>
                     <Button
                       variant={business.isDisabled ? 'outline' : 'destructive'}
@@ -127,12 +134,12 @@ export function SystemManagerDashboard({
                       {business.isDisabled ? (
                         <>
                           <ShieldCheck className="h-4 w-4" />
-                          Enable
+                          {t.systemManager.enable}
                         </>
                       ) : (
                         <>
                           <ShieldX className="h-4 w-4" />
-                          Disable
+                          {t.systemManager.disableBtn}
                         </>
                       )}
                     </Button>
@@ -147,11 +154,11 @@ export function SystemManagerDashboard({
       <section className="space-y-4">
         <h2 className="text-xl font-semibold flex items-center gap-2">
           <Users className="h-5 w-5 text-primary" />
-          Admin Records ({admins.length})
+          {t.systemManager.adminRecords} ({admins.length})
         </h2>
 
         {admins.length === 0 ? (
-          <Card className="p-8 text-center text-muted-foreground">No admins found.</Card>
+          <Card className="p-8 text-center text-muted-foreground">{t.systemManager.noAdmins}</Card>
         ) : (
           <div className="space-y-3">
             {admins.map((admin) => (
@@ -159,11 +166,11 @@ export function SystemManagerDashboard({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="font-medium text-foreground">{admin.name}</p>
-                    <p className="text-sm text-muted-foreground">{admin.email || 'No email'} | {admin.phone || 'No phone'}</p>
+                    <p className="text-sm text-muted-foreground">{admin.email || t.systemManager.noEmail} | {admin.phone || t.systemManager.noPhone}</p>
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    <p>Businesses: {adminBusinessCounts[admin.id] ?? 0}</p>
-                    <p>Created: {formatDate(admin.createdAt)}</p>
+                    <p>{t.systemManager.businessCount} {adminBusinessCounts[admin.id] ?? 0}</p>
+                    <p>{t.systemManager.createdAt} {formatDate(admin.createdAt)}</p>
                   </div>
                 </div>
               </Card>

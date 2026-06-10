@@ -66,11 +66,11 @@ export function AdminDashboard({
       {businesses.length > 0 && (
         <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
           <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="text-sm text-muted-foreground">Business:</span>
+          <span className="text-sm text-muted-foreground">{t.admin.businessSwitcher}</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="flex items-center gap-2">
-                {selectedBusiness?.name ?? 'Select a business'}
+                {selectedBusiness?.name ?? t.admin.selectBusiness}
                 <ChevronDown className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
@@ -103,7 +103,7 @@ export function AdminDashboard({
         <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7 lg:w-auto lg:inline-grid">
           <TabsTrigger value="businesses" className="flex items-center gap-2">
             <Building2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Businesses</span>
+            <span className="hidden sm:inline">{t.admin.businesses}</span>
           </TabsTrigger>
           <TabsTrigger value="availability" className="flex items-center gap-2" disabled={!selectedBusinessId}>
             <CalendarDays className="h-4 w-4" />

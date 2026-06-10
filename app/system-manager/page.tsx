@@ -21,13 +21,6 @@ export default async function SystemManagerPage() {
       <Navbar user={user} />
 
       <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
-        <header className="space-y-1">
-          <h1 className="text-2xl font-bold text-foreground">System Manager</h1>
-          <p className="text-muted-foreground">
-            Monitor every business, membership payment state, and admin records.
-          </p>
-        </header>
-
         <SystemManagerDashboard
           businesses={overview.businesses}
           admins={overview.admins}

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { upgradeUserToAdmin } from '@/app/actions/admin-upgrade'
+import { useLanguage } from '@/lib/i18n/language-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +21,7 @@ interface PaymentFormProps {
 
 export function PaymentForm({ onSuccess, onPay, successTitle, successDescription }: PaymentFormProps) {
   const router = useRouter()
+  const { t } = useLanguage()
   const { toast } = useToast()
   const [cardNumber, setCardNumber] = useState('')
   const [cardName, setCardName] = useState('')
@@ -45,8 +47,8 @@ export function PaymentForm({ onSuccess, onPay, successTitle, successDescription
 
       setPaymentComplete(true)
       toast({
-        title: successTitle ?? 'Payment Successful!',
-        description: successDescription ?? 'Your account has been upgraded to Admin.',
+        title: successTitle ?? t.payment.successDefault,
+        description: successDescription ?? t.payment.successDescDefault,
       })
 
       setTimeout(() => {
@@ -58,8 +60,8 @@ export function PaymentForm({ onSuccess, onPay, successTitle, successDescription
       }, 1500)
     } catch (error) {
       toast({
-        title: 'Payment Failed',
-        description: error instanceof Error ? error.message : 'There was an error processing your payment. Please try again.',
+        title: t.payment.failed,
+        description: error instanceof Error ? error.message : t.payment.failedDesc,
         variant: 'destructive',
       })
     } finally {
@@ -74,9 +76,9 @@ export function PaymentForm({ onSuccess, onPay, successTitle, successDescription
           <div className="flex justify-center mb-4">
             <CheckCircle2 className="h-16 w-16 text-green-500" />
           </div>
-          <CardTitle className="text-2xl">{successTitle ?? 'Payment Successful!'}</CardTitle>
+          <CardTitle className="text-2xl">{successTitle ?? t.payment.successDefault}</CardTitle>
           <CardDescription>
-            {successDescription ?? 'Your account has been upgraded to Admin. Redirecting...'}
+            {successDescription ?? t.payment.successDescDefault}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -88,16 +90,16 @@ export function PaymentForm({ onSuccess, onPay, successTitle, successDescription
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CreditCard className="h-5 w-5" />
-          Complete Your Payment
+          {t.payment.title}
         </CardTitle>
         <CardDescription>
-          Enter your card details to upgrade to Admin access. This is a simulated payment for demonstration purposes.
+          {onPay ? t.payment.subtitleBusiness : t.payment.subtitle}
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="cardName">Name on Card</Label>
+            <Label htmlFor="cardName">{t.payment.nameOnCard}</Label>
             <Input
               id="cardName"
               value={cardName}
@@ -107,7 +109,7 @@ export function PaymentForm({ onSuccess, onPay, successTitle, successDescription
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cardNumber">Card Number</Label>
+            <Label htmlFor="cardNumber">{t.payment.cardNumber}</Label>
             <Input
               id="cardNumber"
               value={cardNumber}
@@ -119,7 +121,7 @@ export function PaymentForm({ onSuccess, onPay, successTitle, successDescription
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="expiry">Expiry Date</Label>
+              <Label htmlFor="expiry">{t.payment.expiryDate}</Label>
               <Input
                 id="expiry"
                 value={expiryDate}
@@ -136,7 +138,7 @@ export function PaymentForm({ onSuccess, onPay, successTitle, successDescription
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cvv">CVV</Label>
+              <Label htmlFor="cvv">{t.payment.cvv}</Label>
               <Input
                 id="cvv"
                 value={cvv}
@@ -153,12 +155,12 @@ export function PaymentForm({ onSuccess, onPay, successTitle, successDescription
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
+                {t.payment.processing}
               </>
             ) : (
               <>
                 <CreditCard className="mr-2 h-4 w-4" />
-                Pay $99.00 - Upgrade to Admin
+                {t.payment.payBtn}
               </>
             )}
           </Button>

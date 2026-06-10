@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { createBusiness, deleteBusiness } from '@/app/actions/business'
 import { PaymentForm } from '@/components/payment-form'
+import { useLanguage } from '@/lib/i18n/language-context'
 import { Building2, Plus, Trash2, ExternalLink, ArrowRight, CreditCard } from 'lucide-react'
 import type { Business } from '@/lib/db/schema'
 
@@ -53,6 +54,7 @@ export function BusinessesManager({
   onSelectBusiness,
 }: BusinessesManagerProps) {
   const router = useRouter()
+  const { t } = useLanguage()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogStep, setDialogStep] = useState<DialogStep>('details')
   const [deleteTarget, setDeleteTarget] = useState<Business | null>(null)
@@ -101,7 +103,7 @@ export function BusinessesManager({
       setDeleteTarget(null)
       router.refresh()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete business')
+      alert(err instanceof Error ? err.message : t.admin.failedToDeleteBusiness)
     }
   }
 
@@ -111,17 +113,17 @@ export function BusinessesManager({
         <div>
           <h2 className="font-semibold text-foreground flex items-center gap-2">
             <Building2 className="h-5 w-5 text-primary" />
-            My Businesses
+            {t.admin.myBusinesses}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Create and manage your businesses. Clients book via their unique URL.
+            {t.admin.myBusinessesDesc}
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
             <Button size="sm">
               <Plus className="h-4 w-4 mr-1" />
-              New Business
+              {t.admin.newBusiness}
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -130,22 +132,22 @@ export function BusinessesManager({
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Building2 className="h-5 w-5" />
-                    New Business — Step 1 of 2
+                    {t.admin.newBusinessStep1}
                   </DialogTitle>
                 </DialogHeader>
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="biz-name">Business Name</Label>
+                    <Label htmlFor="biz-name">{t.admin.businessName}</Label>
                     <Input
                       id="biz-name"
                       value={name}
                       onChange={(e) => handleNameChange(e.target.value)}
-                      placeholder="My Salon"
+                      placeholder={t.admin.businessNameSalonPlaceholder}
                     />
                   </div>
                   <div className="flex flex-col gap-2">
                     <Label htmlFor="biz-slug">
-                      URL Slug
+                      {t.admin.businessSlugLabel}
                       <span className="text-muted-foreground font-normal ml-1">
                         (/{slug || 'your-slug'}/book)
                       </span>
@@ -158,23 +160,23 @@ export function BusinessesManager({
                     />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="biz-desc">Description (optional)</Label>
+                    <Label htmlFor="biz-desc">{t.admin.businessDescOptional}</Label>
                     <Textarea
                       id="biz-desc"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       rows={2}
-                      placeholder="A short description shown on the booking page"
+                      placeholder={t.admin.businessDescPlaceholder}
                     />
                   </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                    Cancel
+                    {t.common.cancel}
                   </Button>
                   <Button onClick={handleProceedToPayment} disabled={!name.trim()}>
                     <CreditCard className="h-4 w-4" />
-                    Proceed to Payment
+                    {t.admin.proceedToPayment}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </DialogFooter>
@@ -184,20 +186,20 @@ export function BusinessesManager({
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <CreditCard className="h-5 w-5" />
-                    New Business — Step 2 of 2: Payment
+                    {t.admin.newBusinessStep2}
                   </DialogTitle>
                 </DialogHeader>
                 <p className="text-sm text-muted-foreground">
-                  Complete the membership payment to create <strong>{name}</strong>.
+                  {t.admin.paymentCompleteFor} <strong>{name}</strong>.
                 </p>
                 <PaymentForm
                   onPay={handlePay}
                   onSuccess={handlePaymentSuccess}
-                  successTitle="Business Created!"
-                  successDescription={`"${name}" has been added to your account.`}
+                  successTitle={t.admin.businessCreatedSuccess}
+                  successDescription={`"${name}" ${t.admin.businessCreatedDesc}`}
                 />
                 <Button variant="ghost" size="sm" className="w-full" onClick={() => setDialogStep('details')}>
-                  ← Back to Details
+                  {t.admin.backToDetails}
                 </Button>
               </div>
             )}
@@ -208,9 +210,9 @@ export function BusinessesManager({
       {businesses.length === 0 ? (
         <Card className="p-12 text-center">
           <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No businesses yet</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">{t.admin.noBusinesses}</h3>
           <p className="text-muted-foreground">
-            Create your first business to start accepting bookings.
+            {t.admin.noBusinessesDesc}
           </p>
         </Card>
       ) : (
@@ -246,7 +248,7 @@ export function BusinessesManager({
                       onSelectBusiness(biz.id)
                     }}
                   >
-                    {selectedBusinessId === biz.id ? 'Selected' : 'Select'}
+                    {selectedBusinessId === biz.id ? t.admin.selectedBusiness : t.admin.selectBusinessBtn}
                   </Button>
                   <Button
                     size="sm"
@@ -279,25 +281,22 @@ export function BusinessesManager({
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Business</AlertDialogTitle>
+            <AlertDialogTitle>{t.admin.deleteBusiness}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete <strong>{deleteTarget?.name}</strong> and all its
-              meeting types, availability slots, and bookings. This cannot be undone.
+              {t.admin.deleteBusinessConfirm.replace('{name}', deleteTarget?.name ?? '')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={handleDelete}
             >
-              Delete
+              {t.common.delete}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
   )
-}
-
 }
