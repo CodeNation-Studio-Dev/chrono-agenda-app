@@ -15,12 +15,32 @@ function VerifyEmailFormContent() {
   const router = useRouter()
   const { t } = useLanguage()
   const token = searchParams.get('token')
+  const businessSlugParam = searchParams.get('businessSlug')
 
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
+  const [businessSlug, setBusinessSlug] = useState<string | null>(null)
+
+  const isValidSlug = (value: string | null) => Boolean(value && /^[a-z0-9-]+$/.test(value))
+
+  const signInDestination = businessSlug ? `/${businessSlug}/sign-in` : '/sign-in'
+
+  useEffect(() => {
+    if (isValidSlug(businessSlugParam)) {
+      const slug = businessSlugParam as string
+      setBusinessSlug(slug)
+      window.sessionStorage.setItem('chrono:lastBusinessSlug', slug)
+      return
+    }
+
+    const saved = window.sessionStorage.getItem('chrono:lastBusinessSlug')
+    if (isValidSlug(saved)) {
+      setBusinessSlug(saved)
+    }
+  }, [businessSlugParam])
 
   // Auto-verify if token is present
   useEffect(() => {
@@ -44,7 +64,7 @@ function VerifyEmailFormContent() {
         setSuccess(true)
         // Redirect to sign-in after 2 seconds
         setTimeout(() => {
-          router.push('/sign-in')
+          router.push(signInDestination)
         }, 2000)
       }
     } catch (err) {
@@ -114,7 +134,7 @@ function VerifyEmailFormContent() {
             <p className="text-center text-sm text-slate-600 dark:text-slate-400">
               {t.auth.verifyEmailDesc}
             </p>
-            <Button onClick={() => router.push('/sign-in')} className="w-full mt-4">
+            <Button onClick={() => router.push(signInDestination)} className="w-full mt-4">
               {t.auth.signInBtn}
             </Button>
           </CardContent>
@@ -174,7 +194,7 @@ function VerifyEmailFormContent() {
 
           <Button
             variant="outline"
-            onClick={() => router.push('/sign-in')}
+            onClick={() => router.push(signInDestination)}
             className="w-full"
           >
             {t.auth.signInBtn}

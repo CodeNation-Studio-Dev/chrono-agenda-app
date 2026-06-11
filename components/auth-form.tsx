@@ -33,6 +33,18 @@ export function AuthForm({
 
   const isSignUp = mode === 'sign-up'
 
+  const persistBusinessSlug = (slug?: string) => {
+    if (!slug) return
+    if (typeof window === 'undefined') return
+    window.sessionStorage.setItem('chrono:lastBusinessSlug', slug)
+  }
+
+  const readPersistedBusinessSlug = () => {
+    if (typeof window === 'undefined') return null
+    const value = window.sessionStorage.getItem('chrono:lastBusinessSlug')
+    return value && /^[a-z0-9-]+$/.test(value) ? value : null
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -50,15 +62,19 @@ export function AuthForm({
       return
     }
 
-    // After sign up, redirect to verify email page
-    // Then user will be redirected to booking after verification
     if (isSignUp) {
-      router.push('/verify-email')
+      persistBusinessSlug(businessSlug)
+      const destination = businessSlug
+        ? `/verify-email?businessSlug=${encodeURIComponent(businessSlug)}`
+        : '/verify-email'
+      router.push(destination)
       return
     }
 
-    // Without a slug, send users to the business selector flow.
-    const destination = businessSlug ? `/${businessSlug}/book` : '/invalid-slug/sign-up'
+    persistBusinessSlug(businessSlug)
+    const fallbackSlug = readPersistedBusinessSlug()
+    const resolvedSlug = businessSlug ?? fallbackSlug
+    const destination = resolvedSlug ? `/${resolvedSlug}/book` : '/sign-in'
     router.push(destination)
     router.refresh()
   }

@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
+import { getCurrentUser } from '@/app/actions/scheduling'
+import { getFirstBusinessSlugForUser } from '@/app/actions/business'
 import { AuthForm } from '@/components/auth-form'
 
 export const metadata: Metadata = {
@@ -18,7 +20,23 @@ export const metadata: Metadata = {
 
 export default async function SignInPage() {
   const session = await auth.api.getSession({ headers: await headers() })
-  if (session?.user) redirect('/invalid-slug/sign-up')
+  if (session?.user) {
+    const user = await getCurrentUser()
+
+    if (!user) redirect('/sign-in')
+    if (user.role === 'system_manager') redirect('/system-manager')
+    if (user.role === 'admin') redirect('/admin')
+
+    if (user.role === 'client') {
+      const firstBusinessSlug = await getFirstBusinessSlugForUser(user.id)
+      if (firstBusinessSlug) {
+        redirect(`/${firstBusinessSlug}/book`)
+      }
+      redirect('/invalid-slug/sign-up')
+    }
+
+    redirect('/create-business')
+  }
   
   return <AuthForm mode="sign-in" />
 }
