@@ -144,7 +144,7 @@ export function AvailabilityManager({ slots, businessId }: AvailabilityManagerPr
 
         {/* Slots for Selected Date */}
         <Card className="p-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
             <h2 className="font-semibold text-foreground">
               {selectedDate ? format(selectedDate, 'MMMM d, yyyy', { locale: dateLocale }) : t.admin.selectDate}
@@ -171,7 +171,7 @@ export function AvailabilityManager({ slots, businessId }: AvailabilityManagerPr
                     {selectedDate && format(selectedDate, 'EEEE, MMMM d, yyyy', { locale: dateLocale })}
                   </p>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="startTime">{t.admin.startTime}</Label>
                     <Input

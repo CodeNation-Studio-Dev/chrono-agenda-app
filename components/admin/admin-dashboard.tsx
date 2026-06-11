@@ -64,12 +64,12 @@ export function AdminDashboard({
     <div className="space-y-6">
       {/* Business Switcher */}
       {businesses.length > 0 && (
-        <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+        <div className="flex flex-wrap items-center gap-3 p-3 rounded-lg border bg-card">
           <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
           <span className="text-sm text-muted-foreground">{t.admin.businessSwitcher}</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="flex items-center gap-2 max-w-full sm:max-w-none">
                 {selectedBusiness?.name ?? t.admin.selectBusiness}
                 <ChevronDown className="h-3.5 w-3.5" />
               </Button>
@@ -91,7 +91,7 @@ export function AdminDashboard({
               href={`/${selectedBusiness.slug}/book`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors ml-auto"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors sm:ml-auto w-full sm:w-auto"
             >
               /{selectedBusiness.slug}/book ↗
             </a>
@@ -100,20 +100,20 @@ export function AdminDashboard({
       )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 sm:grid-cols-7 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="businesses" className="flex items-center gap-2">
+        <TabsList className="w-full justify-start overflow-x-auto whitespace-nowrap">
+          <TabsTrigger value="businesses" className="flex items-center gap-2 shrink-0">
             <Building2 className="h-4 w-4" />
             <span className="hidden sm:inline">{t.admin.businesses}</span>
           </TabsTrigger>
-          <TabsTrigger value="availability" className="flex items-center gap-2" disabled={!selectedBusinessId}>
+          <TabsTrigger value="availability" className="flex items-center gap-2 shrink-0" disabled={!selectedBusinessId}>
             <CalendarDays className="h-4 w-4" />
             <span className="hidden sm:inline">{t.admin.availability}</span>
           </TabsTrigger>
-          <TabsTrigger value="meeting-types" className="flex items-center gap-2" disabled={!selectedBusinessId}>
+          <TabsTrigger value="meeting-types" className="flex items-center gap-2 shrink-0" disabled={!selectedBusinessId}>
             <Clock className="h-4 w-4" />
             <span className="hidden sm:inline">{t.admin.meetingTypes}</span>
           </TabsTrigger>
-          <TabsTrigger value="bookings" className="flex items-center gap-2" disabled={!selectedBusinessId}>
+          <TabsTrigger value="bookings" className="flex items-center gap-2 shrink-0" disabled={!selectedBusinessId}>
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">{t.admin.allBookings}</span>
             {activeBookings.length > 0 && (
@@ -122,15 +122,15 @@ export function AdminDashboard({
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center gap-2" disabled={!selectedBusinessId}>
+          <TabsTrigger value="history" className="flex items-center gap-2 shrink-0" disabled={!selectedBusinessId}>
             <History className="h-4 w-4" />
             <span className="hidden sm:inline">{t.admin.history}</span>
           </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center gap-2" disabled={!selectedBusinessId}>
+          <TabsTrigger value="users" className="flex items-center gap-2 shrink-0" disabled={!selectedBusinessId}>
             <UserCog className="h-4 w-4" />
             <span className="hidden sm:inline">{t.admin.users}</span>
           </TabsTrigger>
-          <TabsTrigger value="branding" className="flex items-center gap-2" disabled={!selectedBusinessId}>
+          <TabsTrigger value="branding" className="flex items-center gap-2 shrink-0" disabled={!selectedBusinessId}>
             <Palette className="h-4 w-4" />
             <span className="hidden sm:inline">{t.admin.branding}</span>
           </TabsTrigger>
