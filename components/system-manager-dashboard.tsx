@@ -22,6 +22,8 @@ interface SystemManagerDashboardProps {
   adminBusinessCounts: Record<string, number>
 }
 
+type BusinessStatusFilter = 'all' | 'trial-active' | 'trial-expired' | 'paid' | 'disabled'
+
 function formatDate(value: Date | string | null) {
   if (!value) return 'N/A'
   const date = value instanceof Date ? value : new Date(value)
@@ -54,6 +56,21 @@ export function SystemManagerDashboard({
   const { t } = useLanguage()
   const [pendingBusinessId, setPendingBusinessId] = useState<number | null>(null)
   const [disableReasons, setDisableReasons] = useState<Record<number, string>>({})
+  const [statusFilter, setStatusFilter] = useState<BusinessStatusFilter>('all')
+
+  const getBusinessFilterStatus = (business: Business): Exclude<BusinessStatusFilter, 'all'> | 'unpaid' => {
+    if (business.isDisabled) return 'disabled'
+    const trial = getTrialMeta(business.trialEndsAt)
+    if (trial.isTrial && !trial.isExpired) return 'trial-active'
+    if (trial.isTrial && trial.isExpired) return 'trial-expired'
+    if (business.membershipPaid) return 'paid'
+    return 'unpaid'
+  }
+
+  const filteredBusinesses = businesses.filter(({ business }) => {
+    if (statusFilter === 'all') return true
+    return getBusinessFilterStatus(business) === statusFilter
+  })
 
   const handleMembershipToggle = async (business: Business) => {
     setPendingBusinessId(business.id)
@@ -97,7 +114,49 @@ export function SystemManagerDashboard({
           <Card className="p-8 text-center text-muted-foreground">{t.systemManager.noBusinesses}</Card>
         ) : (
           <div className="space-y-4">
-            {businesses.map(({ business, owner }) => {
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant={statusFilter === 'all' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('all')}
+              >
+                {t.systemManager.filterAll}
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === 'trial-active' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('trial-active')}
+              >
+                {t.systemManager.filterTrialActive}
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === 'trial-expired' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('trial-expired')}
+              >
+                {t.systemManager.filterTrialExpired}
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === 'paid' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('paid')}
+              >
+                {t.systemManager.filterPaid}
+              </Button>
+              <Button
+                size="sm"
+                variant={statusFilter === 'disabled' ? 'default' : 'outline'}
+                onClick={() => setStatusFilter('disabled')}
+              >
+                {t.systemManager.filterDisabled}
+              </Button>
+            </div>
+
+            {filteredBusinesses.length === 0 ? (
+              <Card className="p-6 text-center text-muted-foreground">{t.systemManager.noBusinessesForFilter}</Card>
+            ) : null}
+
+            {filteredBusinesses.map(({ business, owner }) => {
               const isPending = pendingBusinessId === business.id
               const trial = getTrialMeta(business.trialEndsAt)
 
@@ -120,17 +179,17 @@ export function SystemManagerDashboard({
                       </Badge>
                       {trial.isTrial && !trial.isExpired ? (
                         <Badge variant="outline" className="border-emerald-500/40 text-emerald-700">
-                          Free Trial ({Math.max(trial.daysLeft ?? 0, 0)}d left)
+                          {t.systemManager.trialActiveBadge} ({Math.max(trial.daysLeft ?? 0, 0)}d)
                         </Badge>
                       ) : null}
                       {trial.isTrial && trial.isExpired ? (
                         <Badge variant="outline" className="border-amber-500/40 text-amber-700">
-                          Trial Expired
+                          {t.systemManager.trialExpiredBadge}
                         </Badge>
                       ) : null}
                       {!trial.isTrial && business.membershipPaid ? (
                         <Badge variant="outline" className="border-primary/30 text-primary">
-                          Paid Plan
+                          {t.systemManager.paidPlanBadge}
                         </Badge>
                       ) : null}
                     </div>
@@ -139,7 +198,7 @@ export function SystemManagerDashboard({
                   <div className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2 lg:grid-cols-5">
                     <p>{t.systemManager.createdAt} {formatDate(business.createdAt)}</p>
                     <p>{t.systemManager.paidAt} {formatDate(business.membershipPaidAt)}</p>
-                    <p>Trial Ends: {formatDate(business.trialEndsAt)}</p>
+                    <p>{t.systemManager.trialEndsAt} {formatDate(business.trialEndsAt)}</p>
                     <p>{t.systemManager.disabledAt} {formatDate(business.disabledAt)}</p>
                     <p>{t.systemManager.reason} {business.disabledReason || t.systemManager.na}</p>
                   </div>
