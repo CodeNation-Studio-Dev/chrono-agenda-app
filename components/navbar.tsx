@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth-client'
 import { useLanguage } from '@/lib/i18n/language-context'
@@ -19,15 +20,27 @@ import { LanguageSelector } from '@/components/language-selector'
 import { LogOut, Settings, Calendar, User } from 'lucide-react'
 import type { User as UserType } from '@/lib/db/schema'
 
+type ClientBusiness = {
+  id: number
+  name: string
+  slug: string
+}
+
 interface NavbarProps {
   user: UserType | null
   businessSlug?: string
+  clientBusinesses?: ClientBusiness[]
 }
 
 
-export function Navbar({ user, businessSlug }: NavbarProps) {
+export function Navbar({ user, businessSlug, clientBusinesses = [] }: NavbarProps) {
   const router = useRouter()
   const { t } = useLanguage()
+
+  useEffect(() => {
+    if (!businessSlug) return
+    document.cookie = `chrono_preferred_business=${encodeURIComponent(businessSlug)}; Path=/; Max-Age=31536000; SameSite=Lax`
+  }, [businessSlug])
 
   const getInitials = (name: string) =>
     name
@@ -41,6 +54,12 @@ export function Navbar({ user, businessSlug }: NavbarProps) {
     await authClient.signOut()
     const destination = businessSlug ? `/${businessSlug}/sign-in` : '/sign-in'
     router.push(destination)
+    router.refresh()
+  }
+
+  const handleSwitchBusiness = (slug: string) => {
+    document.cookie = `chrono_preferred_business=${encodeURIComponent(slug)}; Path=/; Max-Age=31536000; SameSite=Lax`
+    router.push(`/${slug}/book`)
     router.refresh()
   }
 
@@ -81,6 +100,29 @@ export function Navbar({ user, businessSlug }: NavbarProps) {
                 </Button>
               ) : (
                 <>
+                  {clientBusinesses.length > 1 && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="max-w-[180px] truncate">
+                          {clientBusinesses.find((b) => b.slug === businessSlug)?.name ?? 'Switch business'}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-56">
+                        <DropdownMenuLabel>My businesses</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {clientBusinesses.map((business) => (
+                          <DropdownMenuItem
+                            key={business.id}
+                            onClick={() => handleSwitchBusiness(business.slug)}
+                            className="flex items-center justify-between"
+                          >
+                            <span className="truncate">{business.name}</span>
+                            {business.slug === businessSlug ? <span className="text-xs text-muted-foreground">Current</span> : null}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                   <Button variant="ghost" size="sm" asChild>
                     <Link href={businessSlug ? `/${businessSlug}/book` : '/book'} className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />

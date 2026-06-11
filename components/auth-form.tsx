@@ -37,6 +37,7 @@ export function AuthForm({
     if (!slug) return
     if (typeof window === 'undefined') return
     window.sessionStorage.setItem('chrono:lastBusinessSlug', slug)
+    document.cookie = `chrono_preferred_business=${encodeURIComponent(slug)}; Path=/; Max-Age=31536000; SameSite=Lax`
   }
 
   const readPersistedBusinessSlug = () => {

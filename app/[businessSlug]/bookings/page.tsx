@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { getCurrentUser, getClientBookings, getAvailableSlots } from '@/app/actions/scheduling'
-import { getBusinessBySlug, isBusinessMember } from '@/app/actions/business'
+import { getBusinessBySlug, getUserBusinessesForUser, isBusinessMember } from '@/app/actions/business'
 import { Navbar } from '@/components/navbar'
 import { BookingsList } from '@/components/bookings-list'
 import { BookingsPageHeader } from '@/components/bookings-page-content'
@@ -32,9 +32,11 @@ export default async function BookingsPage({ params }: BookingsPageProps) {
     getAvailableSlots(business.id),
   ])
 
+  const clientBusinesses = user.role === 'client' ? await getUserBusinessesForUser(user.id) : []
+
   return (
     <div className="min-h-svh bg-background">
-      <Navbar user={user} businessSlug={businessSlug} />
+      <Navbar user={user} businessSlug={businessSlug} clientBusinesses={clientBusinesses} />
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         <BookingsPageHeader />

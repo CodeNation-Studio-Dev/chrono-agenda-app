@@ -74,6 +74,21 @@ export async function getFirstBusinessSlugForUser(userId: string): Promise<strin
   return rows[0]?.slug ?? null
 }
 
+// Get all active businesses a user belongs to (for client business switcher)
+export async function getUserBusinessesForUser(userId: string) {
+  return db
+    .select({
+      id: businesses.id,
+      name: businesses.name,
+      slug: businesses.slug,
+      joinedAt: businessMembers.joinedAt,
+    })
+    .from(businessMembers)
+    .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
+    .where(and(eq(businessMembers.userId, userId), eq(businesses.isDisabled, false)))
+    .orderBy(asc(businessMembers.joinedAt))
+}
+
 // Admin: create a new business
 export async function createBusiness(data: {
   name: string

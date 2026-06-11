@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { getCurrentUser, getAvailableSlots, getMeetingTypes } from '@/app/actions/scheduling'
-import { getBusinessBySlug, joinBusiness } from '@/app/actions/business'
+import { getBusinessBySlug, getUserBusinessesForUser, joinBusiness } from '@/app/actions/business'
 import { Navbar } from '@/components/navbar'
 import { BookingCalendar } from '@/components/booking-calendar'
 import { BookPageHeader, NoSlotsMessage, NoMeetingTypesMessage } from '@/components/book-page-content'
@@ -42,9 +42,11 @@ export default async function BookPage({ params }: BookPageProps) {
     getMeetingTypes(business.id),
   ])
 
+  const clientBusinesses = user.role === 'client' ? await getUserBusinessesForUser(user.id) : []
+
   return (
     <div className="min-h-svh bg-background">
-      <Navbar user={user} businessSlug={businessSlug} />
+      <Navbar user={user} businessSlug={businessSlug} clientBusinesses={clientBusinesses} />
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         <BusinessBrandingHeader business={business} />

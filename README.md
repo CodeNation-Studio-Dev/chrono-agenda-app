@@ -140,67 +140,51 @@ client-meeting-scheduler/
 
 ```mermaid
 graph TD
-    Start([User Visits App]) --> CheckAuth{Authenticated?}
-    
-    CheckAuth -->|No| AuthChoice{Choose Action}
-    AuthChoice -->|Sign Up| SignUpEntry{With Business<br/>Slug?}
-    AuthChoice -->|Sign In| SignInEntry{With Business<br/>Slug?}
-    
-    SignUpEntry -->|Yes| SignUpForm["Sign Up Form<br/>/{slug}/sign-up<br/>- Create Account<br/>- Join Business"]
-    SignUpEntry -->|No| BusinessSelector["1. Business Selector<br/>/invalid-slug/sign-up<br/>- Search businesses<br/>- Create business<br/>- Select business"]
-    
-    SignInEntry -->|Yes| SignInForm["Sign In Form<br/>/{slug}/sign-in<br/>- Email + Password"]
-    SignInEntry -->|No| SignInEntry2["Sign In Form<br/>/sign-in<br/>- Email + Password"]
-    
-    BusinessSelector --> SignUpForm
-    SignUpForm --> EmailVerify["Email Verification<br/>/verify-email<br/>- Confirm Email"]
-    EmailVerify --> SignInForm
-    SignInEntry2 --> SignInForm
-    
-    SignInForm --> CheckRole{User Role?}
-    
-    CheckRole -->|Admin| AdminDash["2. Admin Dashboard<br/>- Manage Businesses<br/>- Availability<br/>- Meeting Types<br/>- Bookings<br/>- Branding"]
-    CheckRole -->|Client| ClientDashCheck{Came from<br/>Business Selector?}
-    CheckRole -->|System Manager| SysMgrDash["System Manager<br/>- View All Businesses<br/>- Enable/Disable<br/>- Manage Payments"]
-    
-    ClientDashCheck -->|Yes| ShowSelector["Show Business Selector<br/>/invalid-slug/sign-up"]
-    ClientDashCheck -->|No| BookingPage["3. Booking Calendar<br/>/{slug}/book<br/>- View Availability<br/>- Select Date/Time<br/>- Confirm Booking"]
-    
-    ShowSelector --> SelectBusiness["Select or Create<br/>Business"]
-    SelectBusiness --> BookingPage
-    
-    BookingPage --> CreateBooking["Create Booking<br/>+ Send .ics Email<br/>+ Add to Calendar"]
-    
-    CreateBooking --> ClientBookings["4. Client Bookings<br/>/{slug}/bookings<br/>- View Bookings<br/>- Cancel Booking<br/>- Reschedule"]
-    
-    AdminDash --> FirstBusiness{First Business?}
-    FirstBusiness -->|Yes| FreeFirst["✓ Free<br/>✓ Auto-activated<br/>✓ No Payment"]
-    FirstBusiness -->|No| PaymentReq["Payment Required<br/>Modal: Card Details"]
-    
-    PaymentReq --> PaymentSuccess["Payment Complete<br/>Business Active"]
-    FreeFirst --> BusinessActive["Business Active"]
-    PaymentSuccess --> BusinessActive
-    
-    AdminDash --> AdminActions["Admin Actions:<br/>✓ Create Business<br/>✓ Pay for Business<br/>✓ Set Availability<br/>✓ Create Meeting Types"]
-    
-    AdminActions --> DisabledBusiness{Business<br/>Disabled?}
-    DisabledBusiness -->|Yes| PayToReactivate["Show Payment Modal<br/>to Reactivate"]
-    DisabledBusiness -->|No| ManageBusiness["Manage Business"]
-    
-    PayToReactivate --> ReactivateSuccess["Business Reactivated<br/>membershipPaid=true<br/>isDisabled=false"]
-    
-    BusinessActive --> ClientCanBook["Clients Can Sign Up<br/>and Book"]
-    ReactivateSuccess --> ClientCanBook
-    ManageBusiness --> ClientCanBook
-    
+    Start([User Visits App]) --> AuthChoice{Sign Up or Sign In}
+
+    AuthChoice -->|Sign Up with slug| SU1[/{slug}/sign-up]
+    AuthChoice -->|Sign Up without slug| SU2[/sign-up]
+    AuthChoice -->|Sign In with slug| SI1[/{slug}/sign-in]
+    AuthChoice -->|Sign In without slug| SI2[/sign-in]
+
+    SU1 --> Verify1[/verify-email?businessSlug={slug}]
+    SU2 --> Verify2[/verify-email]
+
+    Verify1 --> SignInSlug[/{slug}/sign-in]
+    Verify2 --> Selector[/invalid-slug/sign-up]
+
+    Selector --> PickBiz[Select a business]
+    Selector --> CreateBiz[Create your own business]
+
+    PickBiz --> SignInPicked[/{pickedSlug}/sign-in]
+    CreateBiz --> CreateBizPage[/create-business]
+
+    SignInSlug --> RoleFromSlug{Role?}
+    SignInPicked --> RoleFromSlug
+    SI1 --> RoleFromSlug
+
+    SI2 --> RoleNoSlug{Role?}
+
+    RoleFromSlug -->|Admin owner| AdminDash[/admin]
+    RoleFromSlug -->|Client| BookSlug[/{slug}/book]
+    RoleFromSlug -->|System manager| SysMgr[/system-manager]
+
+    RoleNoSlug -->|Admin owner| AdminDash
+    RoleNoSlug -->|Client with membership| FirstBiz[/{firstBusinessSlug}/book]
+    RoleNoSlug -->|Client without membership| Selector
+    RoleNoSlug -->|Pending| CreateBizPage
+    RoleNoSlug -->|System manager| SysMgr
+
+    BookSlug --> JoinBiz[Auto-join business]
+    FirstBiz --> JoinBiz
+    JoinBiz --> Bookings[/{slug}/bookings]
+
     style Start fill:#e1f5ff
+    style Selector fill:#f3e5f5
     style AdminDash fill:#fff3e0
-    style BusinessSelector fill:#f3e5f5
-    style BookingPage fill:#c8e6c9
-    style ClientBookings fill:#c8e6c9
-    style FreeFirst fill:#c8e6c9
-    style PaymentReq fill:#ffccbc
-    style BusinessActive fill:#a5d6a7
+    style BookSlug fill:#c8e6c9
+    style FirstBiz fill:#c8e6c9
+    style CreateBizPage fill:#ffe0b2
 ```
 
 ### Technical Architecture
@@ -293,69 +277,36 @@ graph LR
 
 ```mermaid
 graph TD
-    User["👤 User"]
-    
-    User --> SignUp["Sign Up"]
-    User --> SignIn["Sign In"]
-    
-    SignUp --> SignUpPath{Business Slug<br/>Provided?}
-    SignUpPath -->|Yes| SignUpForm["Sign Up Form<br/>/{slug}/sign-up"]
-    SignUpPath -->|No| BusinessSelector["Business Selector<br/>/invalid-slug/sign-up<br/>Search or Create"]
-    
-    BusinessSelector --> SelectOrCreate["Select Business<br/>or Create New"]
-    SelectOrCreate --> SignUpForm
-    
-    SignUpForm --> PendingRole["Role: pending"]
-    PendingRole --> EmailVerify["Email Verification<br/>/verify-email"]
-    EmailVerify --> CheckFirstBusiness{First Business<br/>for Admin?}
-    
-    CheckFirstBusiness -->|Yes| FreePayment["✓ Free<br/>✓ No Card Required<br/>✓ Auto-activated"]
-    CheckFirstBusiness -->|No| NeedPayment["Payment Required<br/>Card Details Needed"]
-    
-    FreePayment --> SignInForm["Sign In Form"]
-    NeedPayment --> SignInForm
-    
-    SignIn --> SignInPath{Business Slug<br/>Provided?}
-    SignInPath -->|Yes| SignInWithSlug["Sign In Form<br/>/{slug}/sign-in"]
-    SignInPath -->|No| SignInWithoutSlug["Sign In Form<br/>/sign-in"]
-    
-    SignInWithSlug --> AuthSuccess["Authenticated"]
-    SignInWithoutSlug --> AuthSuccess
-    SignInForm --> AuthSuccess
-    
-    AuthSuccess --> CheckRole{What is<br/>the role?}
-    
-    CheckRole -->|pending| PendingDash["Redirect to<br/>Business Selector<br/>/invalid-slug/sign-up<br/>Create or Join Business"]
-    CheckRole -->|client| ClientRedirect{Came from<br/>slug path?}
-    CheckRole -->|admin| AdminDash["Admin Dashboard<br/>- Manage Businesses<br/>- Availability<br/>- Meeting Types<br/>- Bookings<br/>- Branding"]
-    CheckRole -->|system_manager| SysMgrDash["System Manager<br/>- View All Businesses<br/>- Disable/Enable<br/>- Toggle Payments<br/>- View Users"]
-    
-    ClientRedirect -->|Yes| ClientDash["Client Dashboard<br/>/{slug}/book<br/>- View Bookings<br/>- Book Meetings<br/>- View Calendar"]
-    ClientRedirect -->|No| ClientSelector["Business Selector<br/>/invalid-slug/sign-up<br/>Choose Business"]
-    
-    PendingDash --> CreateBusiness["Create Business"]
-    ClientSelector --> SelectBusiness["Select Business"]
-    
-    CreateBusiness --> BecomeAdmin["Role: admin"]
-    SelectBusiness --> ClientDash
-    
-    AdminDash --> CanManage["Can Manage:<br/>- Business<br/>- Staff<br/>- Availability<br/>- Meeting Types<br/>- Branding"]
-    
-    ClientDash --> ClientActions["Client Can:<br/>- Book Meetings<br/>- View Calendar<br/>- Reschedule<br/>- Cancel Booking"]
-    
-    SysMgrDash --> SysMgrActions["System Manager Can:<br/>- Disable Business<br/>- Mark Paid<br/>- View Overview<br/>- Manage Admins"]
-    
-    BecomeAdmin --> CanManage
-    
-    style User fill:#bbdefb
-    style BusinessSelector fill:#e1bee7
-    style PendingDash fill:#ffccbc
-    style ClientDash fill:#c8e6c9
-    style ClientSelector fill:#e1bee7
-    style AdminDash fill:#ffe0b2
-    style SysMgrDash fill:#f8bbd0
-    style FreePayment fill:#a5d6a7
-    style NeedPayment fill:#ffccbc
+    User["User"] --> Pending["Role: pending (after sign-up)"]
+    User --> Client["Role: client"]
+    User --> Admin["Role: admin (business owner)"]
+    User --> SysMgr["Role: system_manager"]
+
+    Pending --> Verify["Verify email"]
+    Verify --> Selector["/invalid-slug/sign-up"]
+    Selector --> SelectBusiness["Select business -> /{slug}/sign-in"]
+    Selector --> CreateBusiness["Create business -> /create-business"]
+
+    SelectBusiness --> Client
+    CreateBusiness --> Admin
+
+    Client --> ClientSignInNoSlug["Sign in at /sign-in"]
+    Client --> ClientSignInSlug["Sign in at /{slug}/sign-in"]
+    ClientSignInNoSlug --> ClientNoSlugResult["Redirect to first membership /{slug}/book"]
+    ClientSignInSlug --> ClientSlugResult["Redirect to /{slug}/book and auto-join"]
+
+    Admin --> AdminSignInNoSlug["Sign in at /sign-in"]
+    Admin --> AdminSignInSlug["Sign in at /{slug}/sign-in"]
+    AdminSignInNoSlug --> AdminNoSlugResult["Redirect to /admin"]
+    AdminSignInSlug --> AdminSlugResult["If owner of slug -> /admin"]
+
+    SysMgr --> SysMgrResult["Redirect to /system-manager"]
+
+    style Pending fill:#ffccbc
+    style Client fill:#c8e6c9
+    style Admin fill:#ffe0b2
+    style SysMgr fill:#f8bbd0
+    style Selector fill:#e1bee7
 ```
 
 ## Database Schema
