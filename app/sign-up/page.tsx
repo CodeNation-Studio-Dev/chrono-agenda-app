@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 
 export default async function SignUpPage() {
   const session = await auth.api.getSession({ headers: await headers() })
-  if (session?.user) redirect('/')
+  if (session?.user) redirect('/invalid-slug/sign-up')
   
   return <AuthForm mode="sign-up" />
 }

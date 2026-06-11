@@ -134,6 +134,230 @@ client-meeting-scheduler/
 └── README.md                     # This file
 ```
 
+## Architecture & Flow
+
+### User Flow Diagram
+
+```mermaid
+graph TD
+    Start([User Visits App]) --> CheckAuth{Authenticated?}
+    
+    CheckAuth -->|No| AuthChoice{Choose Action}
+    AuthChoice -->|Sign Up| SignUpEntry{With Business<br/>Slug?}
+    AuthChoice -->|Sign In| SignInEntry{With Business<br/>Slug?}
+    
+    SignUpEntry -->|Yes| SignUpForm["Sign Up Form<br/>/{slug}/sign-up<br/>- Create Account<br/>- Join Business"]
+    SignUpEntry -->|No| BusinessSelector["1. Business Selector<br/>/invalid-slug/sign-up<br/>- Search businesses<br/>- Create business<br/>- Select business"]
+    
+    SignInEntry -->|Yes| SignInForm["Sign In Form<br/>/{slug}/sign-in<br/>- Email + Password"]
+    SignInEntry -->|No| SignInEntry2["Sign In Form<br/>/sign-in<br/>- Email + Password"]
+    
+    BusinessSelector --> SignUpForm
+    SignUpForm --> EmailVerify["Email Verification<br/>/verify-email<br/>- Confirm Email"]
+    EmailVerify --> SignInForm
+    SignInEntry2 --> SignInForm
+    
+    SignInForm --> CheckRole{User Role?}
+    
+    CheckRole -->|Admin| AdminDash["2. Admin Dashboard<br/>- Manage Businesses<br/>- Availability<br/>- Meeting Types<br/>- Bookings<br/>- Branding"]
+    CheckRole -->|Client| ClientDashCheck{Came from<br/>Business Selector?}
+    CheckRole -->|System Manager| SysMgrDash["System Manager<br/>- View All Businesses<br/>- Enable/Disable<br/>- Manage Payments"]
+    
+    ClientDashCheck -->|Yes| ShowSelector["Show Business Selector<br/>/invalid-slug/sign-up"]
+    ClientDashCheck -->|No| BookingPage["3. Booking Calendar<br/>/{slug}/book<br/>- View Availability<br/>- Select Date/Time<br/>- Confirm Booking"]
+    
+    ShowSelector --> SelectBusiness["Select or Create<br/>Business"]
+    SelectBusiness --> BookingPage
+    
+    BookingPage --> CreateBooking["Create Booking<br/>+ Send .ics Email<br/>+ Add to Calendar"]
+    
+    CreateBooking --> ClientBookings["4. Client Bookings<br/>/{slug}/bookings<br/>- View Bookings<br/>- Cancel Booking<br/>- Reschedule"]
+    
+    AdminDash --> FirstBusiness{First Business?}
+    FirstBusiness -->|Yes| FreeFirst["✓ Free<br/>✓ Auto-activated<br/>✓ No Payment"]
+    FirstBusiness -->|No| PaymentReq["Payment Required<br/>Modal: Card Details"]
+    
+    PaymentReq --> PaymentSuccess["Payment Complete<br/>Business Active"]
+    FreeFirst --> BusinessActive["Business Active"]
+    PaymentSuccess --> BusinessActive
+    
+    AdminDash --> AdminActions["Admin Actions:<br/>✓ Create Business<br/>✓ Pay for Business<br/>✓ Set Availability<br/>✓ Create Meeting Types"]
+    
+    AdminActions --> DisabledBusiness{Business<br/>Disabled?}
+    DisabledBusiness -->|Yes| PayToReactivate["Show Payment Modal<br/>to Reactivate"]
+    DisabledBusiness -->|No| ManageBusiness["Manage Business"]
+    
+    PayToReactivate --> ReactivateSuccess["Business Reactivated<br/>membershipPaid=true<br/>isDisabled=false"]
+    
+    BusinessActive --> ClientCanBook["Clients Can Sign Up<br/>and Book"]
+    ReactivateSuccess --> ClientCanBook
+    ManageBusiness --> ClientCanBook
+    
+    style Start fill:#e1f5ff
+    style AdminDash fill:#fff3e0
+    style BusinessSelector fill:#f3e5f5
+    style BookingPage fill:#c8e6c9
+    style ClientBookings fill:#c8e6c9
+    style FreeFirst fill:#c8e6c9
+    style PaymentReq fill:#ffccbc
+    style BusinessActive fill:#a5d6a7
+```
+
+### Technical Architecture
+
+```mermaid
+graph LR
+    subgraph "Frontend"
+        NavBar["Navbar<br/>- User Context<br/>- Language Selector"]
+        Pages["Pages<br/>- Sign In/Up<br/>- Admin Dashboard<br/>- Book Calendar<br/>- Bookings"]
+        Components["Components<br/>- AuthForm<br/>- BusinessesManager<br/>- BookingCalendar<br/>- PaymentForm"]
+    end
+    
+    subgraph "Backend Actions"
+        AuthActions["Auth Actions<br/>- Sign Up<br/>- Sign In<br/>- Verify Email"]
+        BusinessActions["Business Actions<br/>- Create<br/>- Update<br/>- Delete<br/>- Get All/One"]
+        SchedulingActions["Scheduling Actions<br/>- Create Booking<br/>- Cancel Booking<br/>- Get Slots<br/>- Get Meetings"]
+        AdminUpgrade["Admin Upgrade<br/>- Payment<br/>- Role Change"]
+        SystemManager["System Manager<br/>- Disable Business<br/>- Toggle Payment<br/>- View Overview"]
+    end
+    
+    subgraph "Services"
+        AuthLib["Auth Library<br/>BetterAuth + Plugins"]
+        EmailService["Email Service<br/>Resend<br/>- Verification<br/>- Bookings<br/>- ICS Files"]
+        ICSCalendar["ICS Calendar<br/>- Generate Invites<br/>- METHOD Types<br/>- Organizer Email"]
+        SEO["SEO Services<br/>- Sitemap<br/>- Robots.txt<br/>- Metadata"]
+    end
+    
+    subgraph "Database"
+        Users["Users<br/>- id, email<br/>- role<br/>- name"]
+        Businesses["Businesses<br/>- id, name, slug<br/>- owner, membership<br/>- branding"]
+        Bookings["Bookings<br/>- id, date, time<br/>- status<br/>- client, type"]
+        Slots["Availability Slots<br/>- date, startTime<br/>- endTime<br/>- business"]
+        MeetingTypes["Meeting Types<br/>- name, duration<br/>- color, business"]
+        BusinessMembers["Business Members<br/>- userId, businessId<br/>- joinedAt"]
+    end
+    
+    subgraph "External"
+        GoogleCalendar["📅 Google Calendar<br/>- ICS Import"]
+        OutlookCalendar["📅 Outlook Calendar<br/>- ICS Import"]
+        Database["🗄️ PostgreSQL<br/>Neon"]
+    end
+    
+    Pages --> Components
+    Components --> NavBar
+    
+    Pages --> AuthActions
+    Pages --> BusinessActions
+    Pages --> SchedulingActions
+    
+    AuthActions --> AuthLib
+    AuthActions --> EmailService
+    AuthActions --> Users
+    
+    BusinessActions --> Users
+    BusinessActions --> Businesses
+    BusinessActions --> BusinessMembers
+    
+    SchedulingActions --> Bookings
+    SchedulingActions --> Slots
+    SchedulingActions --> MeetingTypes
+    SchedulingActions --> EmailService
+    SchedulingActions --> ICSCalendar
+    
+    AdminUpgrade --> Users
+    AdminUpgrade --> Businesses
+    
+    SystemManager --> Businesses
+    SystemManager --> Users
+    
+    EmailService --> GoogleCalendar
+    EmailService --> OutlookCalendar
+    
+    ICSCalendar --> EmailService
+    
+    Users --> Database
+    Businesses --> Database
+    Bookings --> Database
+    Slots --> Database
+    MeetingTypes --> Database
+    BusinessMembers --> Database
+    
+    style Frontend fill:#e3f2fd
+    style "Backend Actions" fill:#fff3e0
+    style Services fill:#f3e5f5
+    style Database fill:#e8f5e9
+    style External fill:#fce4ec
+```
+
+### Roles & Permissions
+
+```mermaid
+graph TD
+    User["👤 User"]
+    
+    User --> SignUp["Sign Up"]
+    User --> SignIn["Sign In"]
+    
+    SignUp --> SignUpPath{Business Slug<br/>Provided?}
+    SignUpPath -->|Yes| SignUpForm["Sign Up Form<br/>/{slug}/sign-up"]
+    SignUpPath -->|No| BusinessSelector["Business Selector<br/>/invalid-slug/sign-up<br/>Search or Create"]
+    
+    BusinessSelector --> SelectOrCreate["Select Business<br/>or Create New"]
+    SelectOrCreate --> SignUpForm
+    
+    SignUpForm --> PendingRole["Role: pending"]
+    PendingRole --> EmailVerify["Email Verification<br/>/verify-email"]
+    EmailVerify --> CheckFirstBusiness{First Business<br/>for Admin?}
+    
+    CheckFirstBusiness -->|Yes| FreePayment["✓ Free<br/>✓ No Card Required<br/>✓ Auto-activated"]
+    CheckFirstBusiness -->|No| NeedPayment["Payment Required<br/>Card Details Needed"]
+    
+    FreePayment --> SignInForm["Sign In Form"]
+    NeedPayment --> SignInForm
+    
+    SignIn --> SignInPath{Business Slug<br/>Provided?}
+    SignInPath -->|Yes| SignInWithSlug["Sign In Form<br/>/{slug}/sign-in"]
+    SignInPath -->|No| SignInWithoutSlug["Sign In Form<br/>/sign-in"]
+    
+    SignInWithSlug --> AuthSuccess["Authenticated"]
+    SignInWithoutSlug --> AuthSuccess
+    SignInForm --> AuthSuccess
+    
+    AuthSuccess --> CheckRole{What is<br/>the role?}
+    
+    CheckRole -->|pending| PendingDash["Redirect to<br/>Business Selector<br/>/invalid-slug/sign-up<br/>Create or Join Business"]
+    CheckRole -->|client| ClientRedirect{Came from<br/>slug path?}
+    CheckRole -->|admin| AdminDash["Admin Dashboard<br/>- Manage Businesses<br/>- Availability<br/>- Meeting Types<br/>- Bookings<br/>- Branding"]
+    CheckRole -->|system_manager| SysMgrDash["System Manager<br/>- View All Businesses<br/>- Disable/Enable<br/>- Toggle Payments<br/>- View Users"]
+    
+    ClientRedirect -->|Yes| ClientDash["Client Dashboard<br/>/{slug}/book<br/>- View Bookings<br/>- Book Meetings<br/>- View Calendar"]
+    ClientRedirect -->|No| ClientSelector["Business Selector<br/>/invalid-slug/sign-up<br/>Choose Business"]
+    
+    PendingDash --> CreateBusiness["Create Business"]
+    ClientSelector --> SelectBusiness["Select Business"]
+    
+    CreateBusiness --> BecomeAdmin["Role: admin"]
+    SelectBusiness --> ClientDash
+    
+    AdminDash --> CanManage["Can Manage:<br/>- Business<br/>- Staff<br/>- Availability<br/>- Meeting Types<br/>- Branding"]
+    
+    ClientDash --> ClientActions["Client Can:<br/>- Book Meetings<br/>- View Calendar<br/>- Reschedule<br/>- Cancel Booking"]
+    
+    SysMgrDash --> SysMgrActions["System Manager Can:<br/>- Disable Business<br/>- Mark Paid<br/>- View Overview<br/>- Manage Admins"]
+    
+    BecomeAdmin --> CanManage
+    
+    style User fill:#bbdefb
+    style BusinessSelector fill:#e1bee7
+    style PendingDash fill:#ffccbc
+    style ClientDash fill:#c8e6c9
+    style ClientSelector fill:#e1bee7
+    style AdminDash fill:#ffe0b2
+    style SysMgrDash fill:#f8bbd0
+    style FreePayment fill:#a5d6a7
+    style NeedPayment fill:#ffccbc
+```
+
 ## Database Schema
 
 The application uses PostgreSQL with the following main tables:
