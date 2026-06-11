@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -27,10 +28,13 @@ interface MeetingHistoryProps {
   bookings: BookingWithDetails[]
 }
 
+const ITEMS_PER_PAGE = 10
+
 export function MeetingHistory({ bookings }: MeetingHistoryProps) {
   const { t, language } = useLanguage()
   const dateLocale = language === 'es' ? es : enUS
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [currentPage, setCurrentPage] = useState(1)
 
   // History = every booking, sorted by meeting date (most recent first)
   const sorted = [...bookings].sort((a, b) => {
@@ -42,6 +46,14 @@ export function MeetingHistory({ bookings }: MeetingHistoryProps) {
   const filtered = statusFilter === 'all'
     ? sorted
     : sorted.filter(b => b.booking.status === statusFilter)
+  const totalPages = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE))
+  const paginated = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -78,7 +90,13 @@ export function MeetingHistory({ bookings }: MeetingHistoryProps) {
           </h2>
           <p className="text-sm text-muted-foreground">{t.admin.meetingHistoryDesc}</p>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select
+          value={statusFilter}
+          onValueChange={(value) => {
+            setStatusFilter(value)
+            setCurrentPage(1)
+          }}
+        >
           <SelectTrigger className="w-full sm:w-48">
             <SelectValue placeholder={t.admin.filterByStatus} />
           </SelectTrigger>
@@ -93,7 +111,7 @@ export function MeetingHistory({ bookings }: MeetingHistoryProps) {
       </div>
 
       <div className="space-y-4">
-        {filtered.map(({ booking, slot, meetingType, client }) => {
+        {paginated.map(({ booking, slot, meetingType, client }) => {
           const isClosed = booking.status === 'cancelled' || booking.status === 'completed'
           return (
             <Card key={booking.id} className={`p-6 ${booking.status === 'cancelled' ? 'opacity-60' : ''}`}>
@@ -145,6 +163,30 @@ export function MeetingHistory({ bookings }: MeetingHistoryProps) {
             </Card>
           )
         })}
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">
+            {t.admin.pageLabel} {currentPage} / {totalPages}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+            >
+              {t.admin.prevPage}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+            >
+              {t.admin.nextPage}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -35,6 +35,8 @@ interface AdminBookingsListProps {
   businessId: number
 }
 
+const ITEMS_PER_PAGE = 10
+
 export function AdminBookingsList({ bookings, businessId }: AdminBookingsListProps) {
   const { t, language } = useLanguage()
   const dateLocale = language === 'es' ? es : enUS
@@ -42,6 +44,7 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
   const [selectedDate, setSelectedDate] = useState<Date | undefined>()
   const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
 
   const activeBookings = bookings.filter(b => b.booking.status === 'confirmed' || b.booking.status === 'rescheduled')
 
@@ -76,6 +79,17 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
   const selectedDateBookings = selectedDateKey ? (bookingsByDate[selectedDateKey] ?? []) : []
   const selectedBooking = selectedDateBookings.find((item) => item.booking.id === selectedBookingId)
     ?? selectedDateBookings[0]
+  const totalPages = Math.max(1, Math.ceil(activeBookings.length / ITEMS_PER_PAGE))
+  const paginatedActiveBookings = activeBookings.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  )
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -125,7 +139,10 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
             type="button"
             size="sm"
             variant={viewMode === 'list' ? 'default' : 'ghost'}
-            onClick={() => setViewMode('list')}
+            onClick={() => {
+              setViewMode('list')
+              setCurrentPage(1)
+            }}
           >
             {t.admin.bookingViewList}
           </Button>
@@ -148,7 +165,7 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
 
       {viewMode === 'list' ? (
         <div className="space-y-4">
-          {activeBookings.map(({ booking, slot, meetingType, client }) => (
+          {paginatedActiveBookings.map(({ booking, slot, meetingType, client }) => (
             <Card key={booking.id} className="p-6">
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div className="flex gap-4">
@@ -220,6 +237,30 @@ export function AdminBookingsList({ bookings, businessId }: AdminBookingsListPro
               </div>
             </Card>
           ))}
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              {t.admin.pageLabel} {currentPage} / {totalPages}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                {t.admin.prevPage}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                {t.admin.nextPage}
+              </Button>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-[340px_1fr]">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -40,12 +40,18 @@ interface UsersManagerProps {
   businessId: number
 }
 
+type UserFilter = 'all' | 'admin' | 'client' | 'pending'
+const ITEMS_PER_PAGE = 10
+
 export function UsersManager({ users, currentUserId, slots, meetingTypes, businessId }: UsersManagerProps) {
   const { t } = useLanguage()
   const router = useRouter()
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [userFilter, setUserFilter] = useState<UserFilter>('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
 
   // Add client dialog state
   const [addOpen, setAddOpen] = useState(false)
@@ -113,6 +119,33 @@ export function UsersManager({ users, currentUserId, slots, meetingTypes, busine
       .join('')
       .toUpperCase()
 
+  const filteredUsers = users.filter((u) => {
+    if (userFilter === 'all') return true
+    return u.role === userFilter
+  })
+
+  const searchedUsers = filteredUsers.filter((u) => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return true
+    return (
+      u.name.toLowerCase().includes(q)
+      || (u.email ?? '').toLowerCase().includes(q)
+      || (u.phone ?? '').toLowerCase().includes(q)
+    )
+  })
+
+  const totalPages = Math.max(1, Math.ceil(searchedUsers.length / ITEMS_PER_PAGE))
+  const paginatedUsers = searchedUsers.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  )
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages)
+    }
+  }, [currentPage, totalPages])
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
@@ -126,15 +159,74 @@ export function UsersManager({ users, currentUserId, slots, meetingTypes, busine
         </Button>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          size="sm"
+          variant={userFilter === 'all' ? 'default' : 'outline'}
+          onClick={() => {
+            setUserFilter('all')
+            setCurrentPage(1)
+          }}
+        >
+          {t.admin.filterAllUsers}
+        </Button>
+        <Button
+          size="sm"
+          variant={userFilter === 'admin' ? 'default' : 'outline'}
+          onClick={() => {
+            setUserFilter('admin')
+            setCurrentPage(1)
+          }}
+        >
+          {t.admin.roleAdmin}
+        </Button>
+        <Button
+          size="sm"
+          variant={userFilter === 'client' ? 'default' : 'outline'}
+          onClick={() => {
+            setUserFilter('client')
+            setCurrentPage(1)
+          }}
+        >
+          {t.admin.roleClient}
+        </Button>
+        <Button
+          size="sm"
+          variant={userFilter === 'pending' ? 'default' : 'outline'}
+          onClick={() => {
+            setUserFilter('pending')
+            setCurrentPage(1)
+          }}
+        >
+          {t.admin.rolePending}
+        </Button>
+      </div>
+
+      <div className="w-full max-w-sm">
+        <Input
+          value={searchQuery}
+          onChange={(event) => {
+            setSearchQuery(event.target.value)
+            setCurrentPage(1)
+          }}
+          placeholder={t.admin.searchUsersPlaceholder}
+        />
+      </div>
+
       {users.length === 0 ? (
         <Card className="p-12 text-center">
           <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-foreground mb-2">{t.admin.noUsers}</h3>
           <p className="text-muted-foreground">{t.admin.noUsersDesc}</p>
         </Card>
+      ) : searchedUsers.length === 0 ? (
+        <Card className="p-8 text-center">
+          <p className="text-sm text-muted-foreground">{t.admin.noUsersForFilter}</p>
+        </Card>
       ) : (
-        <div className="space-y-3">
-          {users.map((u) => {
+        <>
+          <div className="space-y-3">
+            {paginatedUsers.map((u) => {
             const isSelf = u.id === currentUserId
             const isAdmin = u.role === 'admin'
             const isPending = u.role === 'pending'
@@ -228,7 +320,32 @@ export function UsersManager({ users, currentUserId, slots, meetingTypes, busine
               </Card>
             )
           })}
-        </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              {t.admin.pageLabel} {currentPage} / {totalPages}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                {t.admin.prevPage}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                {t.admin.nextPage}
+              </Button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Add client dialog */}
