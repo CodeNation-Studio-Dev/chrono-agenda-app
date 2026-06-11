@@ -85,6 +85,15 @@ export async function createBusiness(data: {
   const existing = await db.select().from(businesses).where(eq(businesses.slug, slug)).limit(1)
   if (existing.length > 0) throw new Error('A business with this URL slug already exists')
 
+  const ownedBusinesses = await db
+    .select({ id: businesses.id })
+    .from(businesses)
+    .where(eq(businesses.ownerId, adminId))
+    .limit(1)
+
+  const isFirstBusiness = ownedBusinesses.length === 0
+  const membershipPaid = isFirstBusiness ? true : (data.membershipPaid ?? false)
+
   const result = await db
     .insert(businesses)
     .values({
@@ -93,8 +102,8 @@ export async function createBusiness(data: {
       logoUrl: data.logoUrl || null,
       slug,
       ownerId: adminId,
-      membershipPaid: data.membershipPaid ?? false,
-      membershipPaidAt: data.membershipPaid ? new Date() : null,
+      membershipPaid,
+      membershipPaidAt: membershipPaid ? new Date() : null,
     })
     .returning()
 
