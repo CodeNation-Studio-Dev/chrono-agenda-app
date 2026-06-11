@@ -27,11 +27,20 @@ export const metadata: Metadata = {
     siteName: SEO.appName,
     title: SEO.defaultTitle,
     description: SEO.description,
+    images: [
+      {
+        url: '/icon.jpg',
+        width: 64,
+        height: 64,
+        alt: 'Chrono Agenda',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: SEO.defaultTitle,
     description: SEO.description,
+    images: ['/icon.jpg'],
   },
   robots: {
     index: true,
