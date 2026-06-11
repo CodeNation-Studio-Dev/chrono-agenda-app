@@ -145,6 +145,49 @@ CREATE TABLE IF NOT EXISTS "bookings" (
   "updatedAt"     TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+-- Recurring membership subscription per business.
+CREATE TABLE IF NOT EXISTS "business_subscriptions" (
+  id                           SERIAL PRIMARY KEY,
+  "businessId"                INTEGER NOT NULL UNIQUE REFERENCES "businesses"(id) ON DELETE CASCADE,
+  "ownerId"                   TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  provider                     TEXT NOT NULL DEFAULT 'clip',
+  "providerCustomerId"        TEXT,
+  "providerPaymentMethodToken" TEXT,
+  "providerSubscriptionId"    TEXT,
+  plan                         TEXT NOT NULL DEFAULT 'monthly',
+  amount                       INTEGER NOT NULL,
+  currency                     TEXT NOT NULL DEFAULT 'MXN',
+  status                       TEXT NOT NULL DEFAULT 'active', -- active | past_due | canceled
+  "currentPeriodStart"        TIMESTAMP,
+  "currentPeriodEnd"          TIMESTAMP,
+  "nextBillingAt"             TIMESTAMP,
+  "retryCount"                INTEGER NOT NULL DEFAULT 0,
+  "lastPaymentAt"             TIMESTAMP,
+  "canceledAt"                TIMESTAMP,
+  "createdAt"                 TIMESTAMP NOT NULL DEFAULT NOW(),
+  "updatedAt"                 TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Audit trail of all payment attempts/results.
+CREATE TABLE IF NOT EXISTS "payment_transactions" (
+  id                SERIAL PRIMARY KEY,
+  "subscriptionId" INTEGER NOT NULL REFERENCES "business_subscriptions"(id) ON DELETE CASCADE,
+  "businessId"     INTEGER NOT NULL REFERENCES "businesses"(id) ON DELETE CASCADE,
+  "ownerId"        TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  provider          TEXT NOT NULL DEFAULT 'clip',
+  "providerPaymentId" TEXT,
+  "idempotencyKey" TEXT NOT NULL UNIQUE,
+  status            TEXT NOT NULL, -- pending | paid | failed
+  amount            INTEGER NOT NULL,
+  currency          TEXT NOT NULL DEFAULT 'MXN',
+  "errorMessage"   TEXT,
+  "rawPayload"     TEXT,
+  "attemptedAt"    TIMESTAMP NOT NULL DEFAULT NOW(),
+  "paidAt"         TIMESTAMP,
+  "createdAt"      TIMESTAMP NOT NULL DEFAULT NOW(),
+  "updatedAt"      TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 
 -- ----------------------------------------------------------------------------
 -- INDEXES (improve query performance for common lookups)
@@ -153,6 +196,9 @@ CREATE INDEX IF NOT EXISTS idx_availability_date  ON "availability_slots"(date);
 CREATE INDEX IF NOT EXISTS idx_availability_admin ON "availability_slots"("adminId");
 CREATE INDEX IF NOT EXISTS idx_bookings_client    ON "bookings"("clientId");
 CREATE INDEX IF NOT EXISTS idx_bookings_slot      ON "bookings"("slotId");
+CREATE INDEX IF NOT EXISTS idx_business_subscriptions_next_billing ON "business_subscriptions"("nextBillingAt");
+CREATE INDEX IF NOT EXISTS idx_business_subscriptions_status ON "business_subscriptions"(status);
+CREATE INDEX IF NOT EXISTS idx_payment_transactions_subscription ON "payment_transactions"("subscriptionId");
 
 
 -- ----------------------------------------------------------------------------

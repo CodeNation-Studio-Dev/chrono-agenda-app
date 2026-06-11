@@ -371,6 +371,16 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 # Optional: Admin setup secret (for manual admin creation via API)
 ADMIN_SETUP_SECRET=your-secret-key
 
+# Clip Payments (required to enable real checkout)
+NEXT_PUBLIC_CLIP_PUBLIC_KEY=pk_test_xxxxxxxxxxxxxxxxx
+CLIP_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxx
+CLIP_CREATE_PAYMENT_URL=https://api-gw.payclip.com/payments
+CLIP_RECURRING_CHARGE_URL=https://api-gw.payclip.com/payments/recurring
+CLIP_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxx
+
+# Cron auth for recurring membership renewals
+RENEWAL_CRON_SECRET=cron_secret_xxxxxxxxxxxxxxxxx
+
 # Optional: Vercel deployment variables
 VERCEL_URL=your-vercel-url
 VERCEL_PROJECT_PRODUCTION_URL=your-production-url
@@ -388,6 +398,63 @@ The application requires Resend for:
 4. For production, verify your domain and use your custom email
 
 See `.env.example` for a complete template.
+
+### 2.1 Configure Clip Webhook (recommended)
+
+Set your Clip webhook to call:
+
+```text
+POST /api/clip/webhook
+```
+
+In local development, expose your app with a tunnel (for example ngrok) and register:
+
+```text
+https://<your-public-url>/api/clip/webhook
+```
+
+The webhook endpoint validates `x-clip-webhook-secret` when `CLIP_WEBHOOK_SECRET` is configured.
+On approved/paid events, it finalizes membership changes idempotently based on the payment reference.
+
+### 2.2 Configure recurring renewals cron
+
+The app exposes a protected job endpoint to renew due memberships:
+
+```text
+POST /api/jobs/renew-memberships
+Authorization: Bearer <RENEWAL_CRON_SECRET>
+```
+
+Recommended schedule: run daily.
+
+Behavior:
+- Charges due subscriptions.
+- Retries failed renewals with backoff (D+1, D+3).
+- Cancels/suspends membership after the third failed attempt.
+
+### 2.3 Update tokenized payment method (admin)
+
+If a recurring charge fails because card/token changed, update the saved token with:
+
+```text
+POST /api/admin/subscriptions/payment-method
+```
+
+Body JSON:
+
+```json
+{
+    "businessId": 123,
+    "providerCustomerId": "cus_xxx",
+    "providerPaymentMethodToken": "pm_xxx",
+    "providerSubscriptionId": "sub_xxx"
+}
+```
+
+Notes:
+- Requires authenticated admin owner of the business.
+- If no subscription exists yet, it creates one in `past_due` and schedules billing immediately.
+- Actual charge happens via the recurring renewals cron endpoint.
 
 ### 3. Initialize the Database
 

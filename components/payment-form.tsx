@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { upgradeUserToAdmin } from '@/app/actions/admin-upgrade'
+import { createClipCheckoutSession } from '@/app/actions/clip-payments'
 import { useLanguage } from '@/lib/i18n/language-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +24,7 @@ export function PaymentForm({ onSuccess, onPay, successTitle, successDescription
   const router = useRouter()
   const { t } = useLanguage()
   const { toast } = useToast()
+  const clipEnabled = Boolean(process.env.NEXT_PUBLIC_CLIP_PUBLIC_KEY)
   const [cardNumber, setCardNumber] = useState('')
   const [cardName, setCardName] = useState('')
   const [expiryDate, setExpiryDate] = useState('')
@@ -34,13 +36,22 @@ export function PaymentForm({ onSuccess, onPay, successTitle, successDescription
     e.preventDefault()
     setLoading(true)
 
-    // Simulate payment processing delay
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
     try {
       if (onPay) {
+        // Keep current behavior for custom business payment callbacks.
+        await new Promise((resolve) => setTimeout(resolve, 1500))
         await onPay()
+      } else if (clipEnabled) {
+        const { checkoutUrl } = await createClipCheckoutSession({
+          purpose: 'admin_upgrade_paid',
+          amount: 999,
+          description: 'Chrono Agenda - Admin membership payment',
+        })
+
+        router.push(checkoutUrl)
+        return
       } else {
+        await new Promise((resolve) => setTimeout(resolve, 1500))
         // Default: upgrade user to admin role
         await upgradeUserToAdmin('paid')
       }

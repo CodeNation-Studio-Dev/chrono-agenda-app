@@ -146,6 +146,61 @@ export const bookings = pgTable('bookings', {
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 })
 
+export const businessSubscriptions = pgTable(
+  'business_subscriptions',
+  {
+    id: serial('id').primaryKey(),
+    businessId: integer('businessId')
+      .notNull()
+      .references(() => businesses.id, { onDelete: 'cascade' }),
+    ownerId: text('ownerId')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull().default('clip'),
+    providerCustomerId: text('providerCustomerId'),
+    providerPaymentMethodToken: text('providerPaymentMethodToken'),
+    providerSubscriptionId: text('providerSubscriptionId'),
+    plan: text('plan').notNull().default('monthly'),
+    amount: integer('amount').notNull(), // smallest currency unit (MXN cents)
+    currency: text('currency').notNull().default('MXN'),
+    status: text('status').notNull().default('active'), // active, past_due, canceled
+    currentPeriodStart: timestamp('currentPeriodStart'),
+    currentPeriodEnd: timestamp('currentPeriodEnd'),
+    nextBillingAt: timestamp('nextBillingAt'),
+    retryCount: integer('retryCount').notNull().default(0),
+    lastPaymentAt: timestamp('lastPaymentAt'),
+    canceledAt: timestamp('canceledAt'),
+    createdAt: timestamp('createdAt').notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('business_subscriptions_business_idx').on(t.businessId)],
+)
+
+export const paymentTransactions = pgTable('payment_transactions', {
+  id: serial('id').primaryKey(),
+  subscriptionId: integer('subscriptionId')
+    .notNull()
+    .references(() => businessSubscriptions.id, { onDelete: 'cascade' }),
+  businessId: integer('businessId')
+    .notNull()
+    .references(() => businesses.id, { onDelete: 'cascade' }),
+  ownerId: text('ownerId')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  provider: text('provider').notNull().default('clip'),
+  providerPaymentId: text('providerPaymentId'),
+  idempotencyKey: text('idempotencyKey').notNull().unique(),
+  status: text('status').notNull(), // pending, paid, failed
+  amount: integer('amount').notNull(),
+  currency: text('currency').notNull().default('MXN'),
+  errorMessage: text('errorMessage'),
+  rawPayload: text('rawPayload'),
+  attemptedAt: timestamp('attemptedAt').notNull().defaultNow(),
+  paidAt: timestamp('paidAt'),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+})
+
 // Types for use in the app
 export type User = typeof user.$inferSelect
 export type Business = typeof businesses.$inferSelect
@@ -153,3 +208,5 @@ export type BusinessMember = typeof businessMembers.$inferSelect
 export type MeetingType = typeof meetingTypes.$inferSelect
 export type AvailabilitySlot = typeof availabilitySlots.$inferSelect
 export type Booking = typeof bookings.$inferSelect
+export type BusinessSubscription = typeof businessSubscriptions.$inferSelect
+export type PaymentTransaction = typeof paymentTransactions.$inferSelect
