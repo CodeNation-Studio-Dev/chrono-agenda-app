@@ -42,7 +42,7 @@ export function PaymentForm({ onSuccess, onPay, successTitle, successDescription
         await onPay()
       } else {
         // Default: upgrade user to admin role
-        await upgradeUserToAdmin()
+        await upgradeUserToAdmin('paid')
       }
 
       setPaymentComplete(true)

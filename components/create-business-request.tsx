@@ -5,13 +5,26 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { PaymentForm } from '@/components/payment-form'
+import { upgradeUserToAdmin } from '@/app/actions/admin-upgrade'
 import { useLanguage } from '@/lib/i18n/language-context'
-import { Briefcase, ArrowRight } from 'lucide-react'
+import { Briefcase, ArrowRight, Loader2 } from 'lucide-react'
 
 export function CreateBusinessRequest() {
   const router = useRouter()
   const { t } = useLanguage()
   const [showPayment, setShowPayment] = useState(false)
+  const [trialLoading, setTrialLoading] = useState(false)
+
+  const handleStartTrial = async () => {
+    setTrialLoading(true)
+    try {
+      await upgradeUserToAdmin('trial')
+      router.push('/admin')
+      router.refresh()
+    } finally {
+      setTrialLoading(false)
+    }
+  }
 
   if (showPayment) {
     return <PaymentForm onSuccess={() => setShowPayment(false)} />
@@ -40,13 +53,20 @@ export function CreateBusinessRequest() {
         </div>
       </CardContent>
       <CardFooter>
-        <Button 
-          onClick={() => setShowPayment(true)} 
-          className="w-full"
-        >
-          {t.createBusiness.continueToPayment}
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
+        <div className="w-full space-y-2">
+          <Button onClick={handleStartTrial} className="w-full" variant="default" disabled={trialLoading}>
+            {trialLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Start 1-Month Free Trial
+          </Button>
+          <Button 
+            onClick={() => setShowPayment(true)} 
+            className="w-full"
+            variant="outline"
+          >
+            {t.createBusiness.continueToPayment}
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   )

@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS "user" (
   image            TEXT,
   phone            TEXT,
   role             TEXT NOT NULL DEFAULT 'pending', -- 'pending' | 'admin' | 'client' | 'system_manager'
+  "adminPlan"      TEXT,                            -- 'trial' | 'paid' for admin onboarding
+  "adminTrialEndsAt" TIMESTAMP,
   "createdByAdmin" BOOLEAN NOT NULL DEFAULT FALSE,
   "createdAt"      TIMESTAMP NOT NULL DEFAULT NOW(),
   "updatedAt"      TIMESTAMP NOT NULL DEFAULT NOW()
@@ -83,6 +85,7 @@ CREATE TABLE IF NOT EXISTS "businesses" (
   slug        TEXT NOT NULL UNIQUE,                        -- URL-safe identifier
   "membershipPaid" BOOLEAN NOT NULL DEFAULT FALSE,
   "membershipPaidAt" TIMESTAMP,
+  "trialEndsAt" TIMESTAMP,
   "isDisabled" BOOLEAN NOT NULL DEFAULT FALSE,
   "disabledAt" TIMESTAMP,
   "disabledReason" TEXT,

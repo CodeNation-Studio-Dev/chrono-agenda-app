@@ -14,13 +14,17 @@ async function getSessionUserId() {
 }
 
 // Upgrade user role to admin after successful payment and create business
-export async function upgradeUserToAdmin() {
+export async function upgradeUserToAdmin(plan: 'trial' | 'paid' = 'paid') {
   const userId = await getSessionUserId()
+  const trialEndsAt =
+    plan === 'trial' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null
   
   await db
     .update(user)
     .set({ 
       role: 'admin',
+      adminPlan: plan,
+      adminTrialEndsAt: trialEndsAt,
       updatedAt: new Date(),
     })
     .where(eq(user.id, userId))

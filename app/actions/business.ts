@@ -3,9 +3,30 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { user, businesses, businessMembers } from '@/lib/db/schema'
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, isNotNull, lt } from 'drizzle-orm'
 import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
+
+async function disableExpiredTrialBusinesses() {
+  const now = new Date()
+  await db
+    .update(businesses)
+    .set({
+      membershipPaid: false,
+      membershipPaidAt: null,
+      isDisabled: true,
+      disabledAt: now,
+      disabledReason: 'Free trial expired. Complete payment to reactivate.',
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(businesses.isDisabled, false),
+        isNotNull(businesses.trialEndsAt),
+        lt(businesses.trialEndsAt, now),
+      ),
+    )
+}
 
 async function requireAdmin() {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -35,6 +56,7 @@ function slugify(text: string): string {
 
 // Admin: list all businesses owned by the current admin
 export async function getAdminBusinesses() {
+  await disableExpiredTrialBusinesses()
   const adminId = await requireAdmin()
   return db
     .select()
@@ -44,6 +66,7 @@ export async function getAdminBusinesses() {
 
 // Public: fetch a business by its slug (used on booking pages)
 export async function getBusinessBySlug(slug: string) {
+  await disableExpiredTrialBusinesses()
   const rows = await db
     .select()
     .from(businesses)
@@ -54,6 +77,7 @@ export async function getBusinessBySlug(slug: string) {
 
 // Public: fetch all active businesses (for business selector)
 export async function getPublicBusinesses() {
+  await disableExpiredTrialBusinesses()
   return db
     .select()
     .from(businesses)
@@ -63,11 +87,12 @@ export async function getPublicBusinesses() {
 
 // Get the first business slug a user belongs to (used for default client redirects)
 export async function getFirstBusinessSlugForUser(userId: string): Promise<string | null> {
+  await disableExpiredTrialBusinesses()
   const rows = await db
     .select({ slug: businesses.slug })
     .from(businessMembers)
     .innerJoin(businesses, eq(businessMembers.businessId, businesses.id))
-    .where(eq(businessMembers.userId, userId))
+    .where(and(eq(businessMembers.userId, userId), eq(businesses.isDisabled, false)))
     .orderBy(asc(businessMembers.joinedAt))
     .limit(1)
 
@@ -76,6 +101,7 @@ export async function getFirstBusinessSlugForUser(userId: string): Promise<strin
 
 // Get all active businesses a user belongs to (for client business switcher)
 export async function getUserBusinessesForUser(userId: string) {
+  await disableExpiredTrialBusinesses()
   return db
     .select({
       id: businesses.id,
@@ -98,6 +124,7 @@ export async function createBusiness(data: {
   membershipPaid?: boolean
 }) {
   const adminId = await requireAdmin()
+  await disableExpiredTrialBusinesses()
 
   const name = data.name.trim()
   if (!name) throw new Error('Business name is required')
@@ -117,6 +144,16 @@ export async function createBusiness(data: {
 
   const isFirstBusiness = ownedBusinesses.length === 0
   const membershipPaid = isFirstBusiness ? true : (data.membershipPaid ?? false)
+  const adminRecord = await db
+    .select({ adminPlan: user.adminPlan, adminTrialEndsAt: user.adminTrialEndsAt })
+    .from(user)
+    .where(eq(user.id, adminId))
+    .limit(1)
+
+  const trialEndsAt =
+    isFirstBusiness && adminRecord[0]?.adminPlan === 'trial'
+      ? (adminRecord[0]?.adminTrialEndsAt ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
+      : null
 
   const result = await db
     .insert(businesses)
@@ -128,6 +165,7 @@ export async function createBusiness(data: {
       ownerId: adminId,
       membershipPaid,
       membershipPaidAt: membershipPaid ? new Date() : null,
+      trialEndsAt,
     })
     .returning()
 
@@ -182,6 +220,7 @@ export async function deleteBusiness(businessId: number) {
 // Admin: pay membership and reactivate an owned business
 export async function payBusinessMembership(businessId: number) {
   const adminId = await requireAdmin()
+  await disableExpiredTrialBusinesses()
 
   const biz = await db
     .select()
@@ -195,6 +234,7 @@ export async function payBusinessMembership(businessId: number) {
     .set({
       membershipPaid: true,
       membershipPaidAt: new Date(),
+      trialEndsAt: null,
       isDisabled: false,
       disabledAt: null,
       disabledReason: null,
