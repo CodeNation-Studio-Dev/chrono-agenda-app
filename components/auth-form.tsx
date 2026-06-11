@@ -30,6 +30,7 @@ export function AuthForm({
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [resetMessage, setResetMessage] = useState<string | null>(null)
   const [showBusinessRequest, setShowBusinessRequest] = useState(false)
 
   const isSignUp = mode === 'sign-up'
@@ -37,6 +38,7 @@ export function AuthForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+    setResetMessage(null)
     setLoading(true)
 
     const { error } = isSignUp
@@ -50,9 +52,15 @@ export function AuthForm({
       return
     }
 
-    // After sign up, show the business request option
+    // After sign up on a business slug, go directly to booking.
+    // For generic sign-up, keep the business request flow.
     if (isSignUp) {
-      setShowBusinessRequest(true)
+      if (businessSlug) {
+        router.push(`/${businessSlug}/book`)
+        router.refresh()
+      } else {
+        setShowBusinessRequest(true)
+      }
       return
     }
 
@@ -64,6 +72,28 @@ export function AuthForm({
 
   const signInHref = businessSlug ? `/${businessSlug}/sign-in` : '/sign-in'
   const signUpHref = businessSlug ? `/${businessSlug}/sign-up` : '/sign-up'
+
+  const handleRequestPasswordReset = async () => {
+    setError(null)
+    setResetMessage(null)
+
+    if (!email.trim()) {
+      setError(t.auth.resetNeedEmail)
+      return
+    }
+
+    const { error } = await authClient.requestPasswordReset({
+      email,
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+
+    if (error) {
+      setError(error.message ?? 'Failed to request password reset')
+      return
+    }
+
+    setResetMessage(t.auth.resetEmailSent)
+  }
 
   if (showBusinessRequest) {
     return (
@@ -91,8 +121,8 @@ export function AuthForm({
           <p className="text-sm text-muted-foreground mt-2">
             {businessName
               ? isSignUp
-                ? `Sign up to book with ${businessName}`
-                : `Sign in to book with ${businessName}`
+                ? `${t.auth.signUpToBookWith} ${businessName}`
+                : `${t.auth.signInToBookWith} ${businessName}`
               : isSignUp
                 ? t.auth.signUpSubtitle
                 : t.auth.signInSubtitle}
@@ -156,6 +186,18 @@ export function AuthForm({
             <p className="text-sm text-destructive" role="alert">
               {error}
             </p>
+          )}
+
+          {resetMessage && (
+            <p className="text-sm text-primary" role="status">
+              {resetMessage}
+            </p>
+          )}
+
+          {!isSignUp && (
+            <Button type="button" variant="link" className="justify-start px-0 h-auto" onClick={handleRequestPasswordReset}>
+              {t.auth.forgotPassword}
+            </Button>
           )}
 
           <Button type="submit" disabled={loading} className="w-full mt-2">

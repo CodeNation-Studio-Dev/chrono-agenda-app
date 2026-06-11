@@ -5,6 +5,15 @@ import { useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth-client'
 import { useLanguage } from '@/lib/i18n/language-context'
 import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { LanguageSelector } from '@/components/language-selector'
 import { CalendarDays, LogOut, Settings, Calendar, User } from 'lucide-react'
 import type { User as UserType } from '@/lib/db/schema'
@@ -18,6 +27,14 @@ interface NavbarProps {
 export function Navbar({ user, businessSlug }: NavbarProps) {
   const router = useRouter()
   const { t } = useLanguage()
+
+  const getInitials = (name: string) =>
+    name
+      .split(' ')
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase()
 
   const handleSignOut = async () => {
     await authClient.signOut()
@@ -44,7 +61,7 @@ export function Navbar({ user, businessSlug }: NavbarProps) {
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/system-manager" className="flex items-center gap-2">
                     <Settings className="h-4 w-4" />
-                    <span className="hidden sm:inline">System</span>
+                    <span className="hidden sm:inline">{t.nav.system}</span>
                   </Link>
                 </Button>
               ) : user.role === 'admin' ? (
@@ -70,10 +87,38 @@ export function Navbar({ user, businessSlug }: NavbarProps) {
                   </Button>
                 </>
               )}
-              <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-muted-foreground">
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline ml-2">{t.nav.signOut}</span>
-              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <Avatar className="size-7">
+                      <AvatarFallback className="text-xs">{getInitials(user.name)}</AvatarFallback>
+                    </Avatar>
+                    <span className="hidden md:inline max-w-[120px] truncate">{user.name}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-foreground truncate">{user.name}</span>
+                      <span className="text-xs text-muted-foreground truncate">{user.email || t.admin.noEmail}</span>
+                      <span className="text-xs text-muted-foreground truncate">{user.phone || t.profile.noPhone}</span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="flex items-center gap-2 w-full">
+                      <User className="h-4 w-4" />
+                      {t.nav.profile}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="text-muted-foreground">
+                    <LogOut className="h-4 w-4" />
+                    {t.nav.signOut}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <>

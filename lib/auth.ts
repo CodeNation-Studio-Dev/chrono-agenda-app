@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from '@better-auth/drizzle-adapter'
 import { db } from '@/lib/db'
+import { sendEmail } from '@/lib/email'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -16,6 +17,27 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
+    sendResetPassword: async ({ user, url }) => {
+      if (!user.email) return
+
+      await sendEmail({
+        to: user.email,
+        subject: 'Reset your Chrono password',
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #1a1a1a;">Reset your password</h2>
+            <p>Hi ${user.name},</p>
+            <p>We received a request to reset your password.</p>
+            <p>
+              <a href="${url}" style="display:inline-block;background:#111827;color:#ffffff;padding:10px 16px;border-radius:8px;text-decoration:none;">
+                Reset password
+              </a>
+            </p>
+            <p>If you didn't request this, you can safely ignore this email.</p>
+          </div>
+        `,
+      })
+    },
   },
   user: {
     additionalFields: {
