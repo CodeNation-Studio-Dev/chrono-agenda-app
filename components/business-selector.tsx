@@ -90,7 +90,7 @@ export function BusinessSelector({ businesses }: BusinessSelectorProps) {
 
           {/* Create Business Button */}
           <Button
-            onClick={() => router.push('/admin')}
+            onClick={() => router.push('/create-business')}
             className="w-full"
             variant="outline"
           >
