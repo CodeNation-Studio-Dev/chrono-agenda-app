@@ -57,8 +57,8 @@ export function AuthForm({
       return
     }
 
-    // After sign in, redirect to the business booking page (or home for admin)
-    const destination = businessSlug ? `/${businessSlug}/book` : '/'
+    // Without a slug, send users to the business selector flow.
+    const destination = businessSlug ? `/${businessSlug}/book` : '/invalid-slug/sign-up'
     router.push(destination)
     router.refresh()
   }
