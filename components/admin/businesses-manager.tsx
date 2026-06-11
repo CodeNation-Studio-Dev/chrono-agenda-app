@@ -92,7 +92,7 @@ export function BusinessesManager({
         resetDialog()
         router.refresh()
       } catch (err) {
-        alert(err instanceof Error ? err.message : t.admin.failedToCreateBusiness)
+        alert(err instanceof Error ? err.message : 'Failed to create business')
       }
       return
     }
