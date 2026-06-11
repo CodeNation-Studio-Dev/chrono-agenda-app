@@ -7,7 +7,7 @@ const SESSION_COOKIE_NAMES = [
   'better-auth-session_token',
 ]
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Public routes that don't require authentication
