@@ -29,7 +29,7 @@ import {
 import { createBusiness, deleteBusiness, payBusinessMembership } from '@/app/actions/business'
 import { PaymentForm } from '@/components/payment-form'
 import { useLanguage } from '@/lib/i18n/language-context'
-import { Building2, Plus, Trash2, ExternalLink, ArrowRight, CreditCard, AlertTriangle } from 'lucide-react'
+import { Building2, Plus, Trash2, ExternalLink, ArrowRight, CreditCard, AlertTriangle, UserPlus } from 'lucide-react'
 import type { Business } from '@/lib/db/schema'
 
 interface BusinessesManagerProps {
@@ -297,6 +297,16 @@ export function BusinessesManager({
                     }}
                   >
                     {selectedBusinessId === biz.id ? t.admin.selectedBusiness : t.admin.selectBusinessBtn}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    asChild
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <a href={`/${biz.slug}/sign-up`} target="_blank" rel="noopener noreferrer">
+                      <UserPlus className="h-3.5 w-3.5" />
+                    </a>
                   </Button>
                   <Button
                     size="sm"
