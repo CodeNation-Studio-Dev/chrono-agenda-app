@@ -25,6 +25,7 @@ A modern web application for managing client meetings and bookings. Allows admin
 - **Role-Based Access Control**: Separate admin and client interfaces
 - **Email Verification**: Required email verification before login
 - **Email Notifications**: Password reset and verification emails via Resend
+- **SEO Ready**: Metadata API, Open Graph, Twitter cards, canonical URLs, robots.txt, and sitemap.xml
 - **Multi-Language Support**: i18n configuration for internationalization (English/Spanish)
 - **Responsive Design**: Mobile-friendly UI with Radix UI components
 - **Type Safety**: Full TypeScript support with Drizzle ORM
@@ -73,9 +74,9 @@ client-meeting-scheduler/
 │   ├── actions/                  # Server actions
 │   │   ├── business.ts           # Business settings actions
 │   │   └── scheduling.ts         # Scheduling actions
-│   ├── context/
-│   │   └── language-context.tsx  # Language/i18n context provider
 │   ├── layout.tsx                # Root layout
+│   ├── robots.ts                 # robots.txt generation
+│   ├── sitemap.ts                # sitemap.xml generation
 │   └── page.tsx                  # Home page
 │
 ├── components/                   # React components
@@ -116,6 +117,7 @@ client-meeting-scheduler/
 │   ├── auth-client.ts            # Client-side auth utilities
 │   ├── calendar.ts               # Calendar utilities
 │   ├── email.ts                  # Email sending utilities (Resend)
+│   ├── seo.ts                    # SEO constants and base URL helpers
 │   └── utils.ts                  # General utilities
 │
 ├── public/                       # Static assets
@@ -186,6 +188,10 @@ EMAIL_FROM=Chrono <onboarding@resend.dev>
 
 # Auth Configuration
 BETTER_AUTH_URL=http://localhost:3000
+
+# SEO / Canonical URL (recommended)
+# Public base URL used for canonical metadata, sitemap, and robots host
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # Optional: Admin setup secret (for manual admin creation via API)
 ADMIN_SETUP_SECRET=your-secret-key
@@ -367,6 +373,15 @@ Users can reset their password from the sign-in page:
 - Booking confirmations sent to clients
 - Configured in [lib/email.ts](lib/email.ts)
 
+### SEO
+- Global metadata configured in [app/layout.tsx](app/layout.tsx)
+- Central SEO helpers in [lib/seo.ts](lib/seo.ts)
+- Automatic robots.txt via [app/robots.ts](app/robots.ts)
+- Automatic sitemap.xml via [app/sitemap.ts](app/sitemap.ts)
+- Dynamic metadata for business-scoped auth routes
+- Private/auth routes are set to `noindex` where appropriate
+- Sitemap generation falls back to static routes if the database is unavailable at build/runtime
+
 ## Security
 
 ### Access Control
@@ -411,7 +426,7 @@ Language selector is available in the navbar. Currently supports multiple langua
 - Ensure SSL/TLS settings match your database provider
 
 **Error: "Invalid connection string"**
-- Double-check credentials in .env.development.local
+- Double-check credentials in .env.local
 - Test connection: `psql $DATABASE_URL`
 
 ### Authentication Issues
@@ -490,6 +505,7 @@ Set environment variables in Vercel dashboard:
 - `DATABASE_URL`
 - `RESEND_API_KEY`
 - `BETTER_AUTH_URL` (production domain)
+- `NEXT_PUBLIC_APP_URL` (production canonical URL)
 - `ADMIN_SETUP_SECRET`
 
 ### Environment Variables for Production
@@ -508,6 +524,9 @@ EMAIL_FROM=Chrono <noreply@yourdomain.com>
 
 # Better Auth
 BETTER_AUTH_URL=https://yourdomain.com
+
+# SEO canonical URL
+NEXT_PUBLIC_APP_URL=https://yourdomain.com
 
 # Security
 ADMIN_SETUP_SECRET=your-secure-secret-key
