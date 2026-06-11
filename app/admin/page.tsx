@@ -25,13 +25,14 @@ export default async function AdminPage() {
   if (user.role !== 'admin') redirect('/book')
 
   const businesses = await getAdminBusinesses()
+  const activeBusinesses = businesses.filter((business) => !business.isDisabled)
 
   // For each business, fetch slots, meeting types, bookings, and users in parallel
   const [slotsResults, meetingTypesResults, bookingsResults, usersResults] = await Promise.all([
-    Promise.all(businesses.map((b) => getAdminSlots(b.id).then((s) => [b.id, s] as const))),
-    Promise.all(businesses.map((b) => getAllMeetingTypes(b.id).then((m) => [b.id, m] as const))),
-    Promise.all(businesses.map((b) => getAdminBookings(b.id).then((bks) => [b.id, bks] as const))),
-    Promise.all(businesses.map((b) => getBusinessUsers(b.id).then((u) => [b.id, u] as const))),
+    Promise.all(activeBusinesses.map((b) => getAdminSlots(b.id).then((s) => [b.id, s] as const))),
+    Promise.all(activeBusinesses.map((b) => getAllMeetingTypes(b.id).then((m) => [b.id, m] as const))),
+    Promise.all(activeBusinesses.map((b) => getAdminBookings(b.id).then((bks) => [b.id, bks] as const))),
+    Promise.all(activeBusinesses.map((b) => getBusinessUsers(b.id).then((u) => [b.id, u] as const))),
   ])
 
   const slotsMap = Object.fromEntries(slotsResults) as Record<number, AvailabilitySlot[]>

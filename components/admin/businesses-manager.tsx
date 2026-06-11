@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -25,10 +26,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { createBusiness, deleteBusiness } from '@/app/actions/business'
+import { createBusiness, deleteBusiness, payBusinessMembership } from '@/app/actions/business'
 import { PaymentForm } from '@/components/payment-form'
 import { useLanguage } from '@/lib/i18n/language-context'
-import { Building2, Plus, Trash2, ExternalLink, ArrowRight, CreditCard } from 'lucide-react'
+import { Building2, Plus, Trash2, ExternalLink, ArrowRight, CreditCard, AlertTriangle } from 'lucide-react'
 import type { Business } from '@/lib/db/schema'
 
 interface BusinessesManagerProps {
@@ -58,6 +59,7 @@ export function BusinessesManager({
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogStep, setDialogStep] = useState<DialogStep>('details')
   const [deleteTarget, setDeleteTarget] = useState<Business | null>(null)
+  const [payTarget, setPayTarget] = useState<Business | null>(null)
 
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
@@ -120,6 +122,17 @@ export function BusinessesManager({
     } catch (err) {
       alert(err instanceof Error ? err.message : t.admin.failedToDeleteBusiness)
     }
+  }
+
+  const handleDisabledPayment = async () => {
+    if (!payTarget) return
+    await payBusinessMembership(payTarget.id)
+    onSelectBusiness(payTarget.id)
+  }
+
+  const handleDisabledPaymentSuccess = () => {
+    setPayTarget(null)
+    router.refresh()
   }
 
   return (
@@ -253,6 +266,26 @@ export function BusinessesManager({
                   <p className="text-sm text-muted-foreground line-clamp-2">{biz.description}</p>
                 )}
                 <p className="text-xs text-muted-foreground font-mono">/{biz.slug}/book</p>
+                {biz.isDisabled && (
+                  <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2">
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      This business is disabled. Complete payment to reactivate.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-2 h-7 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setPayTarget(biz)
+                      }}
+                    >
+                      <CreditCard className="h-3.5 w-3.5" />
+                      Pay Membership
+                    </Button>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 pt-1">
                   <Button
                     size="sm"
@@ -312,6 +345,28 @@ export function BusinessesManager({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!payTarget} onOpenChange={(open) => !open && setPayTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Reactivate Business
+            </DialogTitle>
+            <DialogDescription>
+              {payTarget
+                ? `This business is disabled. Complete payment to reactivate ${payTarget.name}.`
+                : 'This business is disabled. Complete payment to reactivate it.'}
+            </DialogDescription>
+          </DialogHeader>
+          <PaymentForm
+            onPay={handleDisabledPayment}
+            onSuccess={handleDisabledPaymentSuccess}
+            successTitle="Business Reactivated"
+            successDescription={payTarget ? `${payTarget.name} is active again.` : 'Business is active again.'}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

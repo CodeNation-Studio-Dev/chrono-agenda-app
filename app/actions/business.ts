@@ -39,7 +39,7 @@ export async function getAdminBusinesses() {
   return db
     .select()
     .from(businesses)
-    .where(and(eq(businesses.ownerId, adminId), eq(businesses.isDisabled, false)))
+    .where(eq(businesses.ownerId, adminId))
 }
 
 // Public: fetch a business by its slug (used on booking pages)
@@ -153,6 +153,33 @@ export async function deleteBusiness(businessId: number) {
 
   await db.delete(businesses).where(eq(businesses.id, businessId))
   revalidatePath('/admin')
+}
+
+// Admin: pay membership and reactivate an owned business
+export async function payBusinessMembership(businessId: number) {
+  const adminId = await requireAdmin()
+
+  const biz = await db
+    .select()
+    .from(businesses)
+    .where(and(eq(businesses.id, businessId), eq(businesses.ownerId, adminId)))
+    .limit(1)
+  if (biz.length === 0) throw new Error('Business not found')
+
+  await db
+    .update(businesses)
+    .set({
+      membershipPaid: true,
+      membershipPaidAt: new Date(),
+      isDisabled: false,
+      disabledAt: null,
+      disabledReason: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(businesses.id, businessId))
+
+  revalidatePath('/admin')
+  revalidatePath(`/${biz[0].slug}/book`)
 }
 
 // Client or admin: join a business (idempotent — safe to call multiple times)
