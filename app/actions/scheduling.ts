@@ -24,9 +24,8 @@ function extractEmailAddress(value?: string): string | null {
   return null
 }
 
-function getOrganizerEmail(fallback?: string): string | null {
-  const configured = extractEmailAddress(process.env.EMAIL_FROM)
-  return fallback ?? configured
+function getOrganizerEmail(): string | null {
+  return extractEmailAddress(process.env.EMAIL_FROM)
 }
 
 // Build an .ics calendar invite attachment for a booking.
@@ -323,7 +322,7 @@ export async function createBooking(data: {
     )
 
     const admin = await db.select().from(user).where(eq(user.id, slot[0].adminId)).limit(1)
-    const organizerEmail = getOrganizerEmail(admin[0]?.email)
+    const organizerEmail = getOrganizerEmail()
     const invite = organizerEmail
       ? buildInvite({
           bookingId: result[0].id,
@@ -400,7 +399,7 @@ export async function cancelBooking(id: number) {
     )
 
     const admin = await db.select().from(user).where(eq(user.id, slot.adminId)).limit(1)
-    const organizerEmail = getOrganizerEmail(admin[0]?.email)
+    const organizerEmail = getOrganizerEmail()
     const invite = organizerEmail
       ? buildInvite({
           bookingId: id,
@@ -501,7 +500,7 @@ export async function rescheduleBooking(id: number, newSlotId: number) {
     )
 
     const admin = await db.select().from(user).where(eq(user.id, newSlot[0].adminId)).limit(1)
-    const organizerEmail = getOrganizerEmail(admin[0]?.email)
+    const organizerEmail = getOrganizerEmail()
     const invite = organizerEmail
       ? buildInvite({
           bookingId: id,
@@ -694,7 +693,7 @@ export async function adminCreateBooking(data: {
     )
 
     const admin = await db.select().from(user).where(eq(user.id, adminId)).limit(1)
-    const organizerEmail = getOrganizerEmail(admin[0]?.email)
+    const organizerEmail = getOrganizerEmail()
     const invite = organizerEmail
       ? buildInvite({
           bookingId: result[0].id,
