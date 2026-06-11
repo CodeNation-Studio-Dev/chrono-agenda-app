@@ -52,6 +52,15 @@ export async function getBusinessBySlug(slug: string) {
   return rows[0] ?? null
 }
 
+// Public: fetch all active businesses (for business selector)
+export async function getPublicBusinesses() {
+  return db
+    .select()
+    .from(businesses)
+    .where(and(eq(businesses.isDisabled, false), eq(businesses.membershipPaid, true)))
+    .orderBy(asc(businesses.name))
+}
+
 // Get the first business slug a user belongs to (used for default client redirects)
 export async function getFirstBusinessSlugForUser(userId: string): Promise<string | null> {
   const rows = await db

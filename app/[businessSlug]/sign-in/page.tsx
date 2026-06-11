@@ -2,8 +2,9 @@ import { notFound, redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
-import { getBusinessBySlug } from '@/app/actions/business'
+import { getBusinessBySlug, getPublicBusinesses } from '@/app/actions/business'
 import { AuthForm } from '@/components/auth-form'
+import { BusinessSelector } from '@/components/business-selector'
 
 interface SignInPageProps {
   params: Promise<{ businessSlug: string }>
@@ -37,10 +38,16 @@ export default async function SignInPage({ params }: SignInPageProps) {
   const { businessSlug } = await params
 
   const business = await getBusinessBySlug(businessSlug)
-  if (!business) notFound()
+  
+  // If business doesn't exist, show selector instead of 404
+  if (!business) {
+    const businesses = await getPublicBusinesses()
+    return <BusinessSelector businesses={businesses} />
+  }
 
   const session = await auth.api.getSession({ headers: await headers() })
   if (session?.user) redirect(`/${businessSlug}/book`)
 
   return <AuthForm mode="sign-in" businessSlug={businessSlug} businessName={business.name} />
 }
+
